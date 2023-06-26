@@ -1,0 +1,54 @@
+{
+  "name": "wgsl-analyzer",
+  "displayName": "wgsl-analyzer",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "build-wasm": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
+    "test-compile": "tsc -p ./",
+    "build": "npm run build-wasm; npm run server; npm run esbuild"
+  },
+  "main": "./dist/extension.js",
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "wgsl",
+        "aliases": [
+          "wgsl",
+          "wgsl"
+        ],
+        "extensions": [
+          "wgsl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "wgsl",
+        "scopeName": "text.wgsl",
+        "path": "./syntaxes/wgsl.tmLanguage.json"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "esbuild": "^0.18.9"
+  },
+  "dependencies": {
+    "vscode": "^1.1.37",
+    "vscode-languageclient": "^8.1.0",
+    "vscode-languageserver": "^8.1.0"
+  }
+}
