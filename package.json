@@ -2,7 +2,7 @@
   "name": "wgsl-lang",
   "displayName": "WGSL Language Support",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "noah-labrecque",
   "repository": {
     "type": "github",
