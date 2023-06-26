@@ -1,3 +1,9 @@
 .vscode/**
 .vscode-test/**
 .gitignore
+.gitattributes
+src
+wgsl-language-server
+node_modules
+package-lock.json
+tsconfig.json

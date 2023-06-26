@@ -1,21 +1,25 @@
 {
-  "name": "wgsl-analyzer",
-  "displayName": "wgsl-analyzer",
+  "name": "wgsl-lang",
+  "displayName": "WGSL Language Support",
   "description": "",
   "version": "0.0.1",
   "publisher": "noah-labrecque",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/unfinishedprogram/wgsl-analyzer"
+  },
   "engines": {
     "vscode": "^1.79.0"
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "vscode:prepublish": "npm run build",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "build-wasm": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
+    "server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --minify --platform=node",
     "test-compile": "tsc -p ./",
-    "build": "npm run build-wasm; npm run server; npm run esbuild"
+    "build": "npm run build-wasm; npm run server; npm run esbuild-base"
   },
   "main": "./dist/extension.js",
   "categories": [
