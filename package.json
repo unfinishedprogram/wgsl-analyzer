@@ -3,6 +3,7 @@
   "displayName": "wgsl-analyzer",
   "description": "",
   "version": "0.0.1",
+  "publisher": "noah-labrecque",
   "engines": {
     "vscode": "^1.79.0"
   },
@@ -44,10 +45,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.3.1",
-    "esbuild": "^0.18.9"
+    "esbuild": "^0.18.9",
+    "vscode": "^1.1.37"
   },
   "dependencies": {
-    "vscode": "^1.1.37",
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver": "^8.1.0"
   }
