@@ -26,6 +26,13 @@
   "categories": [
     "Programming Languages"
   ],
+  "keywords": [
+    "wgsl",
+    "webgpu",
+    "wgpu",
+    "shader",
+    "bevy"
+  ],
   "contributes": {
     "languages": [
       {
