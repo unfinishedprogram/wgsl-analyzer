@@ -8,8 +8,6 @@ use std::collections::BTreeMap;
 
 use document_tracker::DocumentTracker;
 
-use naga::Module;
-
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, TextDocumentIdentifier,
@@ -30,13 +28,6 @@ fn log(s: &str) {
 }
 
 type Diagnostics = BTreeMap<Url, PublishDiagnosticsParams>;
-
-struct TrackedDocument {
-    pub content: String,
-    pub version: i32,
-    pub uri: Url,
-    pub module: Option<Module>,
-}
 
 #[wasm_bindgen]
 pub struct WGSLLanguageServer {
