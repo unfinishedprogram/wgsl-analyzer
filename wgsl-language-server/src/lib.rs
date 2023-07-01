@@ -116,13 +116,7 @@ impl WGSLLanguageServer {
         text_document: TextDocumentIdentifier,
         position: Position,
     ) -> Vec<CompletionItem> {
-        // if let Some(doc) = self.documents.get(&text_document.uri) {
-        //     if let Some(module) = doc.module.as_ref() {
-        //         return completion_provider::get_completion(module);
-        //     }
-        // }
-
-        vec![]
+        self.documents.get_completion(&text_document.uri, position)
     }
 
     fn get_diagnostics(&self) -> Diagnostics {

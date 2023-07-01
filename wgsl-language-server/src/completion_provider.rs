@@ -1,4 +1,4 @@
-use lsp_types::{CompletionItem, CompletionItemKind};
+use lsp_types::{CompletionItem, CompletionItemKind, Position};
 use naga::Module;
 
 pub fn new_completion_item(symbol: String, kind: CompletionItemKind) -> CompletionItem {
@@ -9,7 +9,7 @@ pub fn new_completion_item(symbol: String, kind: CompletionItemKind) -> Completi
     }
 }
 
-pub fn get_completion(module: &Module) -> Vec<CompletionItem> {
+pub fn get_completion(module: &Module, content: &str, position: Position) -> Vec<CompletionItem> {
     let constants = module.constants.iter().flat_map(|(_, v)| v.name.clone());
     let functions = module.functions.iter().flat_map(|(_, v)| v.name.clone());
     let types = module.types.iter().flat_map(|(_, v)| v.name.clone());

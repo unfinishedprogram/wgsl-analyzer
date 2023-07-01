@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use lsp_types::{
-    Diagnostic, DidChangeTextDocumentParams, PublishDiagnosticsParams, TextDocumentItem, Url,
+    CompletionItem, Diagnostic, DidChangeTextDocumentParams, Position, PublishDiagnosticsParams,
+    TextDocumentItem, Url,
 };
 use naga::{
     front::wgsl::ParseError,
@@ -9,7 +10,10 @@ use naga::{
     Module, WithSpan,
 };
 
-use crate::{lsp_range::string_range, util::Ether, wgsl_error::WgslError};
+use crate::{
+    completion_provider::get_completion, lsp_range::string_range, util::Ether,
+    wgsl_error::WgslError,
+};
 
 pub struct TrackedDocument {
     pub src: String,
@@ -119,5 +123,15 @@ impl DocumentTracker {
                 )
             })
             .collect::<BTreeMap<_, _>>()
+    }
+
+    pub fn get_completion(&self, url: &Url, position: Position) -> Vec<CompletionItem> {
+        if let Some(doc) = self.documents.get(url) {
+            if let Some(module) = &doc.module {
+                return get_completion(module, &doc.content, position);
+            }
+        }
+
+        vec![]
     }
 }
