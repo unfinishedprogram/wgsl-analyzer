@@ -1,3 +1,4 @@
+mod completion_provider;
 mod lsp_range;
 mod wgsl_error;
 
@@ -7,12 +8,14 @@ use lsp_range::string_range;
 use naga::{
     front::wgsl,
     valid::{Capabilities, ValidationFlags},
+    Module,
 };
 
 use lsp_types::{
-    Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    Position, PublishDiagnosticsParams, Range, TextDocumentContentChangeEvent, TextDocumentItem,
-    Url,
+    CompletionItem, Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, Range,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentPositionParams, Url,
 };
 
 use serde_wasm_bindgen::{from_value, to_value};
@@ -35,6 +38,7 @@ struct TrackedDocument {
     pub content: String,
     pub version: i32,
     pub uri: Url,
+    pub module: Option<Module>,
 }
 
 #[wasm_bindgen]
@@ -55,7 +59,19 @@ impl WGSLLanguageServer {
         }
     }
 
-    #[wasm_bindgen(js_class = PolarLanguageServer, js_name = onNotification)]
+    #[wasm_bindgen(js_name = onCompletion)]
+    pub fn on_completion(&mut self, params: JsValue) -> String {
+        log("Request for completion");
+        let TextDocumentPositionParams {
+            text_document,
+            position,
+        } = from_value(params).unwrap();
+
+        let res = self.get_auto_complete(text_document, position);
+        serde_json::to_string(&res).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = onNotification)]
     pub fn on_notification(&mut self, method: &str, params: JsValue) {
         match method {
             "textDocument/didOpen" => {
@@ -63,7 +79,6 @@ impl WGSLLanguageServer {
                 let DidOpenTextDocumentParams { text_document } = from_value(params).unwrap();
                 self.insert_document(text_document)
             }
-
             "textDocument/didClose" => {
                 let params: DidCloseTextDocumentParams = from_value(params).unwrap();
                 self.remove_document(&params.text_document.uri);
@@ -90,9 +105,11 @@ impl WGSLLanguageServer {
             TrackedDocument {
                 content: doc.text,
                 version: doc.version,
-                uri: doc.uri,
+                uri: doc.uri.clone(),
+                module: None,
             },
         );
+        self.update_modules(&[&doc.uri]);
         self.update_diagnostics();
     }
 
@@ -109,8 +126,6 @@ impl WGSLLanguageServer {
     ) {
         if let Some(doc) = self.documents.get_mut(uri) {
             doc.version = new_version;
-            log("ChangeLen");
-            log(&changes.len().to_string());
             for change in changes {
                 if let Some(range) = change.range {
                     let range = string_range(&doc.content, range);
@@ -119,14 +134,24 @@ impl WGSLLanguageServer {
                     doc.content = change.text;
                 }
             }
-            log(&doc.content);
         } else {
             log("Change on untracked doc")
         }
+        self.update_modules(&[uri]);
         self.update_diagnostics();
     }
 
-    fn update_diagnostics(&self) {
+    fn update_modules(&mut self, urls: &[&Url]) {
+        for url in urls {
+            if let Some(doc) = self.documents.get_mut(url) {
+                if let Ok(module) = naga::front::wgsl::parse_str(&doc.content) {
+                    _ = doc.module.insert(module);
+                }
+            }
+        }
+    }
+
+    fn update_diagnostics(&mut self) {
         self.send_diagnostics(self.get_diagnostics())
     }
 
@@ -141,6 +166,20 @@ impl WGSLLanguageServer {
                 ));
             }
         }
+    }
+
+    fn get_auto_complete(
+        &self,
+        text_document: TextDocumentIdentifier,
+        position: Position,
+    ) -> Vec<CompletionItem> {
+        if let Some(doc) = self.documents.get(&text_document.uri) {
+            if let Some(module) = doc.module.as_ref() {
+                return completion_provider::get_completion(module);
+            }
+        }
+
+        vec![]
     }
 
     fn naga_validate_wgsl(&self, src: &str) -> Result<(), WgslError> {
@@ -192,5 +231,12 @@ impl WGSLLanguageServer {
             .iter()
             .map(|(uri, doc)| (uri.clone(), self.get_diagnostics_for_doc(doc)))
             .collect::<BTreeMap<_, _>>()
+    }
+}
+
+pub fn string_to_completion_item(label: String) -> CompletionItem {
+    CompletionItem {
+        label,
+        ..Default::default()
     }
 }

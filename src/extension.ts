@@ -1,5 +1,4 @@
 import { ExtensionContext, RelativePattern, WorkspaceFolder, WorkspaceFoldersChangeEvent, languages, workspace } from "vscode";
-import { WgslDocumentSymbolProvider } from "./symbol_provider";
 import { join } from 'path';
 import {
   LanguageClient,
@@ -16,13 +15,7 @@ function wgslFilesInWorkspacePattern(folder: WorkspaceFolder) {
 }
 
 export async function activate(context: ExtensionContext) {
-  console.error("Activating My Extension")
-  context.subscriptions.push(
-    languages.registerDocumentSymbolProvider(
-      { scheme: "file", language: "wgsl" },
-      new WgslDocumentSymbolProvider()
-    )
-  );
+  console.info("Starting WGSL Language Support...")
 
   const folders = workspace.workspaceFolders || [];
   for (const folder of folders) await startClient(folder, context);

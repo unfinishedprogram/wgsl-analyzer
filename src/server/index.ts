@@ -18,6 +18,11 @@ connection.onNotification((...args) => {
     wgsl_ls.onNotification(...args);
 });
 
+connection.onCompletion((...args) => {
+    let res = JSON.parse(wgsl_ls.onCompletion(args[0]));
+    return res;
+});
+
 connection.onInitialize(() => {
     return {
         capabilities: {
@@ -26,6 +31,7 @@ connection.onInitialize(() => {
                 save: true,
                 change: TextDocumentSyncKind.Full,
             },
+            completionProvider: {},
             workspace: {
                 workspaceFolders: { supported: true },
                 fileOperations: {
