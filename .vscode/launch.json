@@ -5,6 +5,7 @@
             "name": "Extension",
             "type": "extensionHost",
             "request": "launch",
+            "preLaunchTask": "build",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}"
             ]
