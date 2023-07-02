@@ -1,6 +1,8 @@
 mod completion_provider;
 mod document_tracker;
 mod lsp_range;
+mod parser;
+mod range_tools;
 mod util;
 mod wgsl_error;
 

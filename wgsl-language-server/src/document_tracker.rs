@@ -59,12 +59,12 @@ impl TrackedDocument {
         let parse_error = self
             .parse_error
             .as_ref()
-            .map(|err| WgslError::from_parse_err(err, &self.content));
+            .map(|err| WgslError::from_parse_err(err, &self.content, &self.src));
 
         let validation_error = self
             .validation_error
             .as_ref()
-            .map(|err| WgslError::from_validation_err(err, &self.content));
+            .map(|err| WgslError::from_validation_err(err, &self.content, &self.src));
 
         vec![validation_error, parse_error]
             .into_iter()
