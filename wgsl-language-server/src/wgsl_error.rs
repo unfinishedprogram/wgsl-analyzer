@@ -1,7 +1,7 @@
 use lsp_types::Diagnostic;
 use naga::{front::wgsl::ParseError, valid::ValidationError, SourceLocation, WithSpan};
 
-use crate::lsp_range::source_location_to_range;
+use crate::range_tools::source_location_to_range;
 
 #[derive(Debug)]
 pub struct WgslError {

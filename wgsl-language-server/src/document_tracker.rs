@@ -11,7 +11,7 @@ use naga::{
 };
 
 use crate::{
-    completion_provider::get_completion, lsp_range::string_range, util::Ether,
+    completion_provider::get_completion, range_tools::string_range, util::Ether,
     wgsl_error::WgslError,
 };
 

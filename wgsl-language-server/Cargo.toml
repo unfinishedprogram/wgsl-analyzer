@@ -7,6 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+codespan-reporting = "0.11.1"
 console_error_panic_hook = "0.1.6"
 js-sys = "0.3.53"
 lsp-types = "0.90.0"

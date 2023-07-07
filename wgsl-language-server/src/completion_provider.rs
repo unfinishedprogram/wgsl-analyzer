@@ -1,12 +1,9 @@
-use std::{env::var, fmt::Debug};
-
 use lsp_types::{CompletionItem, CompletionItemKind, Position, Range};
-use naga::{Arena, Function, Handle, Module, Type, UniqueArena};
+use naga::{Arena, Function, Module, Type, UniqueArena};
 
 use crate::{
-    lsp_range::{source_location_to_range, span_to_range},
     parser::matching_bracket_index,
-    range_tools::RangeTools,
+    range_tools::{source_location_to_range, span_to_range, RangeTools},
 };
 
 pub fn new_completion_item(symbol: String, kind: CompletionItemKind) -> CompletionItem {
