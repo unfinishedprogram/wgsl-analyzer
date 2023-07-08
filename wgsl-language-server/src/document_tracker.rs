@@ -6,7 +6,7 @@ use lsp_types::{
 };
 use naga::{
     front::wgsl::ParseError,
-    valid::{Capabilities, ValidationError, ValidationFlags},
+    valid::{Capabilities, ValidationError, ValidationFlags, Validator},
     Module, WithSpan,
 };
 
@@ -27,15 +27,15 @@ pub struct TrackedDocument {
 impl TrackedDocument {
     pub fn compile_module(
         &mut self,
+        validator: &mut Validator,
     ) -> (
         Option<&Module>,
         Option<Ether<ParseError, WithSpan<ValidationError>>>,
     ) {
-        let mut validator =
-            naga::valid::Validator::new(ValidationFlags::all(), Capabilities::all());
-
         self.validation_error = None;
         self.parse_error = None;
+
+        validator.reset();
 
         match naga::front::wgsl::parse_str(&self.content) {
             Ok(module) => {
@@ -74,12 +74,19 @@ impl TrackedDocument {
     }
 }
 
-#[derive(Default)]
 pub struct DocumentTracker {
+    validator: Validator,
     documents: HashMap<Url, TrackedDocument>,
 }
 
 impl DocumentTracker {
+    pub fn new() -> Self {
+        Self {
+            validator: naga::valid::Validator::new(ValidationFlags::all(), Capabilities::all()),
+            documents: Default::default(),
+        }
+    }
+
     pub fn insert(&mut self, doc: TextDocumentItem) {
         let mut document = TrackedDocument {
             uri: doc.uri.to_owned(),
@@ -90,7 +97,7 @@ impl DocumentTracker {
             validation_error: None,
         };
 
-        document.compile_module();
+        document.compile_module(&mut self.validator);
 
         self.documents.insert(doc.uri, document);
     }
@@ -104,7 +111,7 @@ impl DocumentTracker {
                 } else {
                     doc.content = change.text;
                 }
-                doc.compile_module();
+                doc.compile_module(&mut self.validator);
             }
         }
     }

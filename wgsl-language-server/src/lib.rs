@@ -43,7 +43,7 @@ impl WGSLLanguageServer {
         console_error_panic_hook::set_once();
         log("WGSL Language Server Created");
         Self {
-            documents: Default::default(),
+            documents: DocumentTracker::new(),
             send_diagnostics_callback: send_diagnostics_callback.clone(),
         }
     }
