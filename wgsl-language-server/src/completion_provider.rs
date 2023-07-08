@@ -1,5 +1,5 @@
 use lsp_types::{CompletionItem, CompletionItemKind, Position, Range};
-use naga::{Arena, Function, Module, Type, UniqueArena};
+use naga::{Arena, Constant, Function, Module, Type, UniqueArena};
 
 use crate::{
     parser::matching_bracket_index,
@@ -97,6 +97,21 @@ pub fn get_type_completion(
     res
 }
 
+pub fn get_constant_completion(constants: &Arena<Constant>) -> Vec<CompletionItem> {
+    let mut res = vec![];
+
+    for (_, constant) in constants.iter() {
+        if let Some(name) = &constant.name {
+            res.push(new_completion_item(
+                name.to_owned(),
+                CompletionItemKind::Constant,
+            ))
+        }
+    }
+
+    res
+}
+
 pub fn get_completion(module: &Module, content: &str, position: Position) -> Vec<CompletionItem> {
     let mut res = vec![];
 
@@ -113,13 +128,7 @@ pub fn get_completion(module: &Module, content: &str, position: Position) -> Vec
         }
     }
 
-    // let constants = module.constants.iter().flat_map(|(_, v)| v.name.clone());
-    // use CompletionItemKind::*;
-
-    // let constants = constants.map(|v| new_completion_item(v, Constant));
-    // let functions = functions.map(|v| new_completion_item(v, Function));
+    res.extend(get_constant_completion(&module.constants));
     res.extend(get_type_completion(&module.types, content, &position));
     res
-
-    // constants.chain(functions).chain(types).collect()
 }
