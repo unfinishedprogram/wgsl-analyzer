@@ -1,4 +1,4 @@
-use lsp_types::Position;
+use lsp_types::{Location, Position};
 use naga::{SourceLocation, Span};
 
 pub trait RangeTools {
@@ -44,8 +44,7 @@ pub fn position_at_char_offset(source: &str, char_offset: usize) -> Position {
         }
         offset += line.len() + 1;
     }
-
-    unreachable!("invalid char offset: {char_offset}, in source: {source}");
+    Position::default()
 }
 
 pub fn span_to_range(span: Span, source: &str) -> lsp_types::Range {
@@ -69,4 +68,16 @@ pub fn source_location_to_range(
     let end = position_at_char_offset(source, (location.offset + location.length) as usize);
 
     Some(lsp_types::Range { start, end })
+}
+
+pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Url) -> Location {
+    let std::ops::Range { start, end } = range;
+
+    let start = position_at_char_offset(source, start);
+    let end = position_at_char_offset(source, end);
+
+    Location {
+        uri,
+        range: lsp_types::Range { start, end },
+    }
 }

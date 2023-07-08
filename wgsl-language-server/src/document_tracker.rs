@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub struct TrackedDocument {
-    pub src: String,
+    pub uri: Url,
     pub content: String,
     pub version: i32,
     pub module: Option<Module>,
@@ -59,12 +59,12 @@ impl TrackedDocument {
         let parse_error = self
             .parse_error
             .as_ref()
-            .map(|err| WgslError::from_parse_err(err, &self.content, &self.src));
+            .map(|err| WgslError::from_parse_err(err, &self.content, &self.uri));
 
         let validation_error = self
             .validation_error
             .as_ref()
-            .map(|err| WgslError::from_validation_err(err, &self.content, &self.src));
+            .map(|err| WgslError::from_validation_err(err, &self.content, &self.uri));
 
         vec![validation_error, parse_error]
             .into_iter()
@@ -82,7 +82,7 @@ pub struct DocumentTracker {
 impl DocumentTracker {
     pub fn insert(&mut self, doc: TextDocumentItem) {
         let mut document = TrackedDocument {
-            src: doc.uri.to_string(),
+            uri: doc.uri.to_owned(),
             content: doc.text.clone(),
             version: doc.version,
             module: None,
@@ -118,7 +118,7 @@ impl DocumentTracker {
             .iter()
             .map(|(k, v)| {
                 (
-                    k.clone(),
+                    k.to_owned(),
                     PublishDiagnosticsParams::new(k.to_owned(), v.get_diagnostics(), None),
                 )
             })
