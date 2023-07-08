@@ -1,6 +1,6 @@
 # Change Log
 
-All notable changes to the "wgsl-ls" extension will be documented in this file.
+All notable changes to the "WGSL Language Server" extension will be documented in this file.
 
 ## [Unreleased]
 
