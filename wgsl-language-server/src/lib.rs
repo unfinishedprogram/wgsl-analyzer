@@ -115,10 +115,3 @@ impl WGSLLanguageServer {
         self.documents.get_diagnostics()
     }
 }
-
-pub fn string_to_completion_item(label: String) -> CompletionItem {
-    CompletionItem {
-        label,
-        ..Default::default()
-    }
-}
