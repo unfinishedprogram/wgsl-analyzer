@@ -20,7 +20,8 @@
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --minify --platform=node",
     "test-compile": "tsc -p ./",
-    "build": "npm run build-wasm; npm run server; npm run esbuild-base"
+    "build": "npm run build-wasm; npm run server; npm run esbuild-base",
+    "publish": "vsce publish"
   },
   "main": "./dist/extension.js",
   "categories": [
