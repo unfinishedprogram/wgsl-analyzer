@@ -1,4 +1,4 @@
-use lsp_types::{Diagnostic, DiagnosticRelatedInformation, Url};
+use lsp_types::DiagnosticRelatedInformation;
 use naga::{front::wgsl::ParseError, valid::ValidationError, SourceLocation, WithSpan};
 
 use crate::range_tools::{new_location, source_location_to_range};
@@ -12,7 +12,11 @@ pub struct WgslError {
 }
 
 impl WgslError {
-    pub fn from_validation_err(err: &WithSpan<ValidationError>, src: &str, path: &Url) -> Self {
+    pub fn from_validation_err(
+        err: &WithSpan<ValidationError>,
+        src: &str,
+        path: &lsp_types::Url,
+    ) -> Self {
         let diagnostic = err.diagnostic();
 
         let mut related_information = vec![];
@@ -32,7 +36,7 @@ impl WgslError {
         }
     }
 
-    pub fn from_parse_err(err: &ParseError, src: &str, path: &Url) -> Self {
+    pub fn from_parse_err(err: &ParseError, src: &str, path: &lsp_types::Url) -> Self {
         let diagnostic = err.diagnostic();
         let mut related_information = vec![];
 
@@ -52,9 +56,9 @@ impl WgslError {
     }
 }
 
-impl From<WgslError> for Diagnostic {
+impl From<WgslError> for lsp_types::Diagnostic {
     fn from(val: WgslError) -> Self {
-        Diagnostic {
+        lsp_types::Diagnostic {
             message: val.error,
             range: source_location_to_range(val.location, &val.src).unwrap_or_default(),
             source: Some("wgsl-language-support".to_owned()),
