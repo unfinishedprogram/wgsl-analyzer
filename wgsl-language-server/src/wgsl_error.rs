@@ -1,3 +1,4 @@
+use codespan_reporting::diagnostic::LabelStyle;
 use lsp_types::DiagnosticRelatedInformation;
 use naga::{front::wgsl::ParseError, valid::ValidationError, WithSpan};
 
@@ -7,10 +8,10 @@ use crate::range_tools::{new_location, source_location_to_range};
 pub struct WgslError {
     error: String,
     location: Option<lsp_types::Range>,
-    src: String,
     related_information: Vec<DiagnosticRelatedInformation>,
 }
 
+// Type mostly for conversions between Naga errors and LSP errors
 impl WgslError {
     pub fn from_validation_err(
         err: &WithSpan<ValidationError>,
@@ -27,23 +28,19 @@ impl WgslError {
             .map(|loc| new_location(loc.range.clone(), src, path.to_owned()));
 
         for label in diagnostic.labels {
-            match label.style {
-                codespan_reporting::diagnostic::LabelStyle::Primary => {
-                    location = Some(new_location(label.range, src, path.to_owned()));
-                }
-                codespan_reporting::diagnostic::LabelStyle::Secondary => {
-                    related_information.push(DiagnosticRelatedInformation {
-                        location: new_location(label.range, src, path.to_owned()),
-                        message: label.message,
-                    })
-                }
+            if matches!(label.style, LabelStyle::Primary) {
+                location = Some(new_location(label.range.to_owned(), src, path.to_owned()));
             }
+
+            related_information.push(DiagnosticRelatedInformation {
+                location: new_location(label.range, src, path.to_owned()),
+                message: label.message,
+            })
         }
 
         Self {
             error: err.emit_to_string_with_path(src, path.as_str()),
             location: location.map(|v| v.range),
-            src: src.to_owned(),
             related_information,
         }
     }
@@ -62,7 +59,6 @@ impl WgslError {
         Self {
             error: err.emit_to_string_with_path(src, path.as_str()),
             location: source_location_to_range(err.location(src), src),
-            src: src.to_owned(),
             related_information,
         }
     }
