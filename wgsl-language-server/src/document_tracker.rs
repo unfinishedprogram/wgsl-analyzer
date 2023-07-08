@@ -11,8 +11,8 @@ use naga::{
 };
 
 use crate::{
-    completion_provider::CompletionProvider, range_tools::string_range, util::Ether,
-    wgsl_error::WgslError,
+    completion_provider::CompletionProvider, pretty_error::error_context::ErrorContext,
+    range_tools::string_range, util::Ether, wgsl_error::WgslError,
 };
 
 pub struct TrackedDocument {
@@ -56,15 +56,19 @@ impl TrackedDocument {
     }
 
     pub fn get_diagnostics(&self) -> Vec<Diagnostic> {
+        let error_context = self
+            .module
+            .as_ref()
+            .map(|m| ErrorContext::new(m, &self.content));
+
         let parse_error = self
             .parse_error
             .as_ref()
             .map(|err| WgslError::from_parse_err(err, &self.content, &self.uri));
 
-        let validation_error = self
-            .validation_error
-            .as_ref()
-            .map(|err| WgslError::from_validation_err(err, &self.content, &self.uri));
+        let validation_error = self.validation_error.as_ref().map(|err| {
+            WgslError::from_validation_err(err, &self.content, &self.uri, error_context)
+        });
 
         vec![validation_error, parse_error]
             .into_iter()

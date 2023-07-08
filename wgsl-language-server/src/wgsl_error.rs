@@ -2,7 +2,10 @@ use codespan_reporting::diagnostic::LabelStyle;
 use lsp_types::DiagnosticRelatedInformation;
 use naga::{front::wgsl::ParseError, valid::ValidationError, WithSpan};
 
-use crate::range_tools::{new_location, source_location_to_range};
+use crate::{
+    pretty_error::error_context::ErrorContext,
+    range_tools::{new_location, source_location_to_range},
+};
 
 #[derive(Debug)]
 pub struct WgslError {
@@ -17,8 +20,13 @@ impl WgslError {
         err: &WithSpan<ValidationError>,
         src: &str,
         path: &lsp_types::Url,
+        context: Option<ErrorContext>,
     ) -> Self {
-        let diagnostic = err.diagnostic();
+        let diagnostic = if let Some(context) = context {
+            context.get_diagnostic(err)
+        } else {
+            err.diagnostic()
+        };
 
         let mut related_information = vec![];
 
