@@ -1,12 +1,12 @@
 use lsp_types::DiagnosticRelatedInformation;
-use naga::{front::wgsl::ParseError, valid::ValidationError, SourceLocation, WithSpan};
+use naga::{front::wgsl::ParseError, valid::ValidationError, WithSpan};
 
 use crate::range_tools::{new_location, source_location_to_range};
 
 #[derive(Debug)]
 pub struct WgslError {
     error: String,
-    location: Option<SourceLocation>,
+    location: Option<lsp_types::Range>,
     src: String,
     related_information: Vec<DiagnosticRelatedInformation>,
 }
@@ -21,16 +21,28 @@ impl WgslError {
 
         let mut related_information = vec![];
 
+        let mut location = diagnostic
+            .labels
+            .first()
+            .map(|loc| new_location(loc.range.clone(), src, path.to_owned()));
+
         for label in diagnostic.labels {
-            related_information.push(DiagnosticRelatedInformation {
-                location: new_location(label.range, src, path.to_owned()),
-                message: label.message,
-            })
+            match label.style {
+                codespan_reporting::diagnostic::LabelStyle::Primary => {
+                    location = Some(new_location(label.range, src, path.to_owned()));
+                }
+                codespan_reporting::diagnostic::LabelStyle::Secondary => {
+                    related_information.push(DiagnosticRelatedInformation {
+                        location: new_location(label.range, src, path.to_owned()),
+                        message: label.message,
+                    })
+                }
+            }
         }
 
         Self {
             error: err.emit_to_string_with_path(src, path.as_str()),
-            location: err.location(src),
+            location: location.map(|v| v.range),
             src: src.to_owned(),
             related_information,
         }
@@ -49,7 +61,7 @@ impl WgslError {
 
         Self {
             error: err.emit_to_string_with_path(src, path.as_str()),
-            location: err.location(src),
+            location: source_location_to_range(err.location(src), src),
             src: src.to_owned(),
             related_information,
         }
@@ -60,7 +72,7 @@ impl From<WgslError> for lsp_types::Diagnostic {
     fn from(val: WgslError) -> Self {
         lsp_types::Diagnostic {
             message: val.error,
-            range: source_location_to_range(val.location, &val.src).unwrap_or_default(),
+            range: val.location.unwrap_or_default(),
             source: Some("wgsl-language-support".to_owned()),
             related_information: Some(val.related_information),
             ..Default::default()
