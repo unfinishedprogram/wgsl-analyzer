@@ -1,10 +1,137 @@
-use lsp_types::{CompletionItem, CompletionItemKind, Position, Range};
-use naga::{Arena, Constant, Function, Module, Type, UniqueArena};
+use lsp_types::{CompletionItem, CompletionItemKind, Position};
 
 use crate::{
+    document_tracker::TrackedDocument,
     parser::matching_bracket_index,
     range_tools::{source_location_to_range, span_to_range, RangeTools},
 };
+
+pub trait CompletionProvider {
+    fn get_completion(&self, position: &Position) -> Vec<CompletionItem>;
+
+    fn get_functions(&self, position: &Position) -> Vec<CompletionItem>;
+    fn get_locals(
+        &self,
+        position: &Position,
+        function: naga::Handle<naga::Function>,
+    ) -> Vec<CompletionItem>;
+    fn get_types(&self, position: &Position) -> Vec<CompletionItem>;
+    fn get_constants(&self, position: &Position) -> Vec<CompletionItem>;
+}
+
+impl CompletionProvider for TrackedDocument {
+    fn get_completion(&self, position: &Position) -> Vec<CompletionItem> {
+        let mut res = vec![];
+        res.extend(self.get_functions(position));
+        res.extend(self.get_types(position));
+        res.extend(self.get_constants(position));
+        res
+    }
+    fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
+        let Some(module) = &self.module else {
+            return vec![];
+        };
+
+        let mut res = vec![];
+
+        for (handle, func) in module.functions.iter() {
+            if let Some(name) = func.name.clone() {
+                let mut location = module.functions.get_span(handle).location(&self.content);
+
+                if let Some(close) = matching_bracket_index(&self.content, location.offset as usize)
+                {
+                    location.length = close as u32 - location.offset;
+                }
+
+                let range = source_location_to_range(Some(location), &self.content).unwrap();
+
+                if range.contains_line(position) {
+                    res.extend(self.get_locals(position, handle));
+                }
+
+                res.push(new_completion_item(name, CompletionItemKind::Function))
+            }
+        }
+
+        res
+    }
+    fn get_locals(
+        &self,
+        position: &Position,
+        function: naga::Handle<naga::Function>,
+    ) -> Vec<CompletionItem> {
+        let Some(module) = &self.module else {
+            return vec![];
+        };
+        let function = &module.functions[function];
+        let mut res = vec![];
+
+        for (handle, name) in function.named_expressions.iter() {
+            let range = span_to_range(function.expressions.get_span(*handle), &self.content);
+            res.push(detailed_completion_item(
+                name.to_owned(),
+                CompletionItemKind::Variable,
+                &format!("{:?}", range),
+            ))
+        }
+
+        for (handle, variable) in function.local_variables.iter() {
+            let range = span_to_range(function.local_variables.get_span(handle), &self.content);
+
+            if range.start < *position {
+                if let Some(name) = &variable.name {
+                    res.push(new_completion_item(
+                        name.to_owned(),
+                        CompletionItemKind::Variable,
+                    ))
+                }
+            } else if let Some(name) = &variable.name {
+                res.push(new_completion_item(
+                    name.to_owned(),
+                    CompletionItemKind::Variable,
+                ))
+            }
+        }
+
+        res
+    }
+    fn get_types(&self, position: &Position) -> Vec<CompletionItem> {
+        let Some(module) = &self.module else {
+            return vec![];
+        };
+
+        let mut res = vec![];
+
+        for (_, ty) in module.types.iter() {
+            if let Some(name) = &ty.name {
+                res.push(detailed_completion_item(
+                    name.to_owned(),
+                    CompletionItemKind::Class,
+                    &format!("{:?}", ty.inner),
+                ))
+            }
+        }
+        res
+    }
+    fn get_constants(&self, position: &Position) -> Vec<CompletionItem> {
+        let Some(module) = &self.module else {
+            return vec![];
+        };
+
+        let mut res = vec![];
+
+        for (_, constant) in module.constants.iter() {
+            if let Some(name) = &constant.name {
+                res.push(new_completion_item(
+                    name.to_owned(),
+                    CompletionItemKind::Constant,
+                ))
+            }
+        }
+
+        res
+    }
+}
 
 pub fn new_completion_item(symbol: String, kind: CompletionItemKind) -> CompletionItem {
     CompletionItem {
@@ -25,110 +152,4 @@ pub fn detailed_completion_item(
         detail: Some(detail.to_owned()),
         ..Default::default()
     }
-}
-
-pub fn get_function_scope_range(
-    arena: &Arena<naga::Function>,
-    function: naga::Handle<naga::Function>,
-    src: &str,
-) -> Range {
-    let mut location = arena.get_span(function).location(src);
-
-    if let Some(close) = matching_bracket_index(src, location.offset as usize) {
-        location.length = close as u32 - location.offset;
-    }
-
-    source_location_to_range(Some(location), src).unwrap()
-}
-
-pub fn get_function_completion(
-    function: &Function,
-    content: &str,
-    position: &Position,
-) -> Vec<CompletionItem> {
-    let mut res = vec![];
-
-    for (handle, name) in function.named_expressions.iter() {
-        let range = span_to_range(function.expressions.get_span(*handle), content);
-        res.push(detailed_completion_item(
-            name.to_owned(),
-            CompletionItemKind::Variable,
-            &format!("{:?}", range),
-        ))
-    }
-
-    for (handle, variable) in function.local_variables.iter() {
-        let range = span_to_range(function.local_variables.get_span(handle), content);
-
-        if range.start < *position {
-            if let Some(name) = &variable.name {
-                res.push(new_completion_item(
-                    name.to_owned(),
-                    CompletionItemKind::Variable,
-                ))
-            }
-        } else if let Some(name) = &variable.name {
-            res.push(new_completion_item(
-                name.to_owned(),
-                CompletionItemKind::Variable,
-            ))
-        }
-    }
-
-    res
-}
-
-pub fn get_type_completion(
-    types: &UniqueArena<Type>,
-    content: &str,
-    position: &Position,
-) -> Vec<CompletionItem> {
-    let mut res = vec![];
-
-    for (_, ty) in types.iter() {
-        if let Some(name) = &ty.name {
-            res.push(detailed_completion_item(
-                name.to_owned(),
-                CompletionItemKind::Class,
-                &format!("{:?}", ty.inner),
-            ))
-        }
-    }
-    res
-}
-
-pub fn get_constant_completion(constants: &Arena<Constant>) -> Vec<CompletionItem> {
-    let mut res = vec![];
-
-    for (_, constant) in constants.iter() {
-        if let Some(name) = &constant.name {
-            res.push(new_completion_item(
-                name.to_owned(),
-                CompletionItemKind::Constant,
-            ))
-        }
-    }
-
-    res
-}
-
-pub fn get_completion(module: &Module, content: &str, position: Position) -> Vec<CompletionItem> {
-    let mut res = vec![];
-
-    for (handle, func) in module.functions.iter() {
-        if let Some(name) = func.name.clone() {
-            let r = get_function_scope_range(&module.functions, handle, content);
-
-            // If within function scope, suggest local variables
-            if r.contains_line(position) {
-                res.extend(get_function_completion(func, content, &position))
-            }
-
-            res.push(new_completion_item(name, CompletionItemKind::Function))
-        }
-    }
-
-    res.extend(get_constant_completion(&module.constants));
-    res.extend(get_type_completion(&module.types, content, &position));
-    res
 }

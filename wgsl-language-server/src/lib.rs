@@ -108,7 +108,7 @@ impl WGSLLanguageServer {
         text_document: TextDocumentIdentifier,
         position: Position,
     ) -> Vec<CompletionItem> {
-        self.documents.get_completion(&text_document.uri, position)
+        self.documents.get_completion(&text_document.uri, &position)
     }
 
     fn get_diagnostics(&self) -> Diagnostics {

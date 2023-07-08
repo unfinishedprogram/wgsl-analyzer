@@ -11,7 +11,7 @@ use naga::{
 };
 
 use crate::{
-    completion_provider::get_completion, range_tools::string_range, util::Ether,
+    completion_provider::CompletionProvider, range_tools::string_range, util::Ether,
     wgsl_error::WgslError,
 };
 
@@ -125,13 +125,10 @@ impl DocumentTracker {
             .collect::<BTreeMap<_, _>>()
     }
 
-    pub fn get_completion(&self, url: &Url, position: Position) -> Vec<CompletionItem> {
+    pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
         if let Some(doc) = self.documents.get(url) {
-            if let Some(module) = &doc.module {
-                return get_completion(module, &doc.content, position);
-            }
+            return doc.get_completion(position);
         }
-
         vec![]
     }
 }

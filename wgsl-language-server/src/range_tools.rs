@@ -2,17 +2,17 @@ use lsp_types::{Location, Position};
 use naga::{SourceLocation, Span};
 
 pub trait RangeTools {
-    fn contains_line(&self, position: Position) -> bool;
-    fn contains(&self, position: Position) -> bool;
+    fn contains_line(&self, position: &Position) -> bool;
+    fn contains(&self, position: &Position) -> bool;
 }
 
 impl RangeTools for lsp_types::Range {
-    fn contains_line(&self, position: Position) -> bool {
+    fn contains_line(&self, position: &Position) -> bool {
         position.line >= self.start.line && position.line <= self.end.line
     }
 
-    fn contains(&self, position: Position) -> bool {
-        position >= self.start && position < self.end
+    fn contains(&self, position: &Position) -> bool {
+        position >= &self.start && position < &self.end
     }
 }
 
