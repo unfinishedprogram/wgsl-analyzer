@@ -1,4 +1,4 @@
-use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::diagnostic::Diagnostic;
 use naga::{valid::ValidationError, WithSpan};
 
 use super::error_context::{ContextDiagnostic, ContextErrorLabel, ErrorContext, LabelContext};
@@ -14,7 +14,7 @@ impl ContextDiagnostic for WithSpan<ValidationError> {
                 name,
                 source,
             } => {
-                let mut diagnostic =
+                let diagnostic =
                     Diagnostic::error().with_message(format!("function: '{}' is invalid", name));
 
                 diagnostic

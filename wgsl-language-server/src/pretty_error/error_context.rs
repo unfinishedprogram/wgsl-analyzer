@@ -1,6 +1,8 @@
-mod code_provider;
+pub mod as_type;
+pub mod code_provider;
 pub mod index_impl;
 pub mod span_priovider;
+pub mod type_print;
 
 use codespan_reporting::diagnostic::Label;
 use naga::{Function, Handle, Module};

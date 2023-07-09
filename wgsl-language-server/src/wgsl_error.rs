@@ -33,21 +33,22 @@ impl WgslError {
         let mut location = diagnostic
             .labels
             .first()
+            .as_ref()
             .map(|loc| new_location(loc.range.clone(), src, path.to_owned()));
 
-        for label in diagnostic.labels {
+        for label in diagnostic.labels.iter() {
             if matches!(label.style, LabelStyle::Primary) {
                 location = Some(new_location(label.range.to_owned(), src, path.to_owned()));
             }
 
             related_information.push(DiagnosticRelatedInformation {
-                location: new_location(label.range, src, path.to_owned()),
-                message: label.message,
+                location: new_location(label.range.clone(), src, path.to_owned()),
+                message: label.message.clone(),
             })
         }
 
         Self {
-            error: err.emit_to_string_with_path(src, path.as_str()),
+            error: emit_diagnostic_to_string(&diagnostic, path.as_str(), src),
             location: location.map(|v| v.range),
             related_information,
         }
@@ -82,4 +83,19 @@ impl From<WgslError> for lsp_types::Diagnostic {
             ..Default::default()
         }
     }
+}
+
+pub fn emit_diagnostic_to_string(
+    diagnostic: &codespan_reporting::diagnostic::Diagnostic<()>,
+    path: &str,
+    source: &str,
+) -> String {
+    use codespan_reporting::{files, term};
+    use term::termcolor::NoColor;
+
+    let files = files::SimpleFile::new(path, source);
+    let config = codespan_reporting::term::Config::default();
+    let mut writer = NoColor::new(Vec::new());
+    term::emit(&mut writer, &config, &files, diagnostic).expect("cannot write error");
+    String::from_utf8(writer.into_inner()).unwrap()
 }

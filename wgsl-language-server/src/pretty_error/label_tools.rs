@@ -22,3 +22,11 @@ pub fn secondary(message: impl Into<String>, range: impl AsRange) -> Label<()> {
         message: message.into(),
     }
 }
+pub fn primary(message: impl Into<String>, range: impl AsRange) -> Label<()> {
+    Label {
+        style: LabelStyle::Primary,
+        file_id: (),
+        range: range.as_range(),
+        message: message.into(),
+    }
+}
