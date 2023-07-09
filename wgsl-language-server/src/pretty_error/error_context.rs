@@ -1,3 +1,4 @@
+mod code_provider;
 pub mod index_impl;
 pub mod span_priovider;
 
