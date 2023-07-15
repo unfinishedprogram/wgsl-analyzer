@@ -7,6 +7,8 @@ pub mod type_print;
 use codespan_reporting::diagnostic::Label;
 use naga::{Function, Handle, Module};
 
+use super::label_tools::AsRange;
+
 pub struct ErrorContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
@@ -49,6 +51,16 @@ impl<'a> LabelContext<'a> {
 pub fn append_info(mut labels: Vec<Label<()>>, message: impl Into<String>) -> Vec<Label<()>> {
     let range = labels.last().map(|v| v.range.clone()).unwrap_or_default();
     labels.push(Label::secondary((), range).with_message(message.into()));
+    labels
+}
+
+pub fn append_primary(
+    mut labels: Vec<Label<()>>,
+    message: impl Into<String>,
+    range: impl AsRange,
+) -> Vec<Label<()>> {
+    let range = range.as_range();
+    labels.push(Label::primary((), range).with_message(message.into()));
     labels
 }
 
