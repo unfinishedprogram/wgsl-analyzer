@@ -1,8 +1,8 @@
 use naga::ScalarValue;
 
-use super::error_context::ContextErrorPrint;
+use super::error_context::ContextErrorFmt;
 
-impl ContextErrorPrint for ScalarValue {
+impl ContextErrorFmt for ScalarValue {
     fn print(&self, _: &super::error_context::LabelContext) -> String {
         match self {
             ScalarValue::Sint(value) => format!("{value}"),

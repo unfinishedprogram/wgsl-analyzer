@@ -1,20 +1,16 @@
 mod completion_provider;
 mod document_tracker;
 mod parser;
-mod pretty_error;
 mod range_tools;
 mod span_tools;
-mod util;
 mod wgsl_error;
-
-use std::collections::BTreeMap;
 
 use document_tracker::DocumentTracker;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, TextDocumentIdentifier,
-    TextDocumentPositionParams, Url,
+    TextDocumentPositionParams,
 };
 
 use serde_wasm_bindgen::{from_value, to_value};
@@ -29,8 +25,6 @@ extern "C" {
 fn log(s: &str) {
     console_log(s)
 }
-
-type Diagnostics = BTreeMap<Url, PublishDiagnosticsParams>;
 
 #[wasm_bindgen]
 pub struct WGSLLanguageServer {
@@ -89,12 +83,14 @@ impl WGSLLanguageServer {
 
 impl WGSLLanguageServer {
     fn update_diagnostics(&mut self) {
-        self.send_diagnostics(self.get_diagnostics())
+        let diagnostics = self.get_diagnostics();
+        log(&format!("{diagnostics:?}"));
+        self.send_diagnostics(diagnostics)
     }
 
-    fn send_diagnostics(&self, diagnostics: Diagnostics) {
+    fn send_diagnostics(&self, diagnostics: Vec<PublishDiagnosticsParams>) {
         let this = &JsValue::null();
-        for params in diagnostics.into_values() {
+        for params in diagnostics {
             let params = &to_value(&params).unwrap();
             if let Err(e) = self.send_diagnostics_callback.call1(this, params) {
                 log(&format!(
@@ -113,7 +109,7 @@ impl WGSLLanguageServer {
         self.documents.get_completion(&text_document.uri, &position)
     }
 
-    fn get_diagnostics(&self) -> Diagnostics {
+    fn get_diagnostics(&self) -> Vec<PublishDiagnosticsParams> {
         self.documents.get_diagnostics()
     }
 }

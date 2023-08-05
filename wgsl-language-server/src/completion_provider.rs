@@ -27,8 +27,9 @@ impl CompletionProvider for TrackedDocument {
         res.extend(self.get_constants(position));
         res
     }
+
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
-        let Some(module) = &self.module else {
+        let Some(Ok((module, _))) = &self.compilation_result else {
             return vec![];
         };
 
@@ -60,7 +61,7 @@ impl CompletionProvider for TrackedDocument {
         position: &Position,
         function: naga::Handle<naga::Function>,
     ) -> Vec<CompletionItem> {
-        let Some(module) = &self.module else {
+        let Some(Ok((module, _))) = &self.compilation_result else {
             return vec![];
         };
         let function = &module.functions[function];
@@ -95,8 +96,8 @@ impl CompletionProvider for TrackedDocument {
 
         res
     }
-    fn get_types(&self, position: &Position) -> Vec<CompletionItem> {
-        let Some(module) = &self.module else {
+    fn get_types(&self, _position: &Position) -> Vec<CompletionItem> {
+        let Some(Ok((module, _))) = &self.compilation_result else {
             return vec![];
         };
 
@@ -113,8 +114,8 @@ impl CompletionProvider for TrackedDocument {
         }
         res
     }
-    fn get_constants(&self, position: &Position) -> Vec<CompletionItem> {
-        let Some(module) = &self.module else {
+    fn get_constants(&self, _position: &Position) -> Vec<CompletionItem> {
+        let Some(Ok((module, _))) = &self.compilation_result else {
             return vec![];
         };
 

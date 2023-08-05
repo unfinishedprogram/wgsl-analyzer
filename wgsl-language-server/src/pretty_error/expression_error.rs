@@ -1,7 +1,7 @@
 use codespan_reporting::diagnostic::Label;
 use naga::valid::ExpressionError;
 
-use super::error_context::{append_info, ContextErrorLabel, ContextErrorPrint};
+use super::error_context::{append_info, ContextErrorFmt, ContextErrorLabel};
 
 impl ContextErrorLabel for ExpressionError {
     fn get_label(

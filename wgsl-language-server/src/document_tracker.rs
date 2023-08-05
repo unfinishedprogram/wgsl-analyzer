@@ -1,80 +1,61 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use lsp_types::{
-    CompletionItem, Diagnostic, DidChangeTextDocumentParams, Position, PublishDiagnosticsParams,
+    CompletionItem, DidChangeTextDocumentParams, Position, PublishDiagnosticsParams,
     TextDocumentItem, Url,
 };
 use naga::{
     front::wgsl::ParseError,
-    valid::{Capabilities, ValidationError, ValidationFlags, Validator},
+    valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
     Module, WithSpan,
 };
 
 use crate::{
-    completion_provider::CompletionProvider, pretty_error::error_context::ErrorContext,
-    range_tools::string_range, util::Ether, wgsl_error::WgslError,
+    completion_provider::CompletionProvider, range_tools::string_range, wgsl_error::WgslError,
 };
 
 pub struct TrackedDocument {
     pub uri: Url,
     pub content: String,
     pub version: i32,
-    pub module: Option<Module>,
-    pub validation_error: Option<WithSpan<ValidationError>>,
-    pub parse_error: Option<ParseError>,
+    pub compilation_result: Option<CompilationResult>,
 }
 
+type CompilationResult =
+    Result<(Module, Result<ModuleInfo, WithSpan<ValidationError>>), ParseError>;
+
 impl TrackedDocument {
-    pub fn compile_module(
-        &mut self,
-        validator: &mut Validator,
-    ) -> (
-        Option<&Module>,
-        Option<Ether<ParseError, WithSpan<ValidationError>>>,
-    ) {
-        self.validation_error = None;
-        self.parse_error = None;
-
+    pub fn compile_module(&mut self, validator: &mut Validator) -> &CompilationResult {
         validator.reset();
-
-        match naga::front::wgsl::parse_str(&self.content) {
+        let result = match naga::front::wgsl::parse_str(&self.content) {
+            Err(parse_error) => Err(parse_error),
             Ok(module) => {
-                let module = self.module.insert(module);
-                match validator.validate(module) {
-                    Ok(_) => (Some(module), None),
-                    Err(error) => (
-                        Some(module),
-                        Some(Ether::Right(self.validation_error.insert(error).to_owned())),
-                    ),
-                }
+                let validation_result = validator.validate(&module);
+                Ok((module, validation_result))
             }
-            Err(error) => (
-                None,
-                Some(Ether::Left(self.parse_error.insert(error).to_owned())),
-            ),
-        }
+        };
+
+        self.compilation_result.insert(result)
     }
 
-    pub fn get_diagnostics(&self) -> Vec<Diagnostic> {
-        let error_context = self
-            .module
-            .as_ref()
-            .map(|m| ErrorContext::new(m, &self.content));
+    pub fn get_wgsl_errors(&self) -> Option<WgslError> {
+        let Some(compilation_result) = &self.compilation_result else {
+            return None;
+        };
 
-        let parse_error = self
-            .parse_error
-            .as_ref()
-            .map(|err| WgslError::from_parse_err(err, &self.content, &self.uri));
-
-        let validation_error = self.validation_error.as_ref().map(|err| {
-            WgslError::from_validation_err(err, &self.content, &self.uri, error_context)
-        });
-
-        vec![validation_error, parse_error]
-            .into_iter()
-            .flatten()
-            .map(|v| v.into())
-            .collect()
+        match compilation_result {
+            Err(parse_error) => Some(WgslError::from_parse_err(
+                parse_error,
+                &self.content,
+                &self.uri,
+            )),
+            Ok((_, Err(validation_error))) => Some(WgslError::from_validation_err(
+                validation_error,
+                &self.content,
+                &self.uri,
+            )),
+            _ => None,
+        }
     }
 }
 
@@ -96,9 +77,7 @@ impl DocumentTracker {
             uri: doc.uri.to_owned(),
             content: doc.text.clone(),
             version: doc.version,
-            module: None,
-            parse_error: None,
-            validation_error: None,
+            compilation_result: None,
         };
 
         document.compile_module(&mut self.validator);
@@ -115,8 +94,8 @@ impl DocumentTracker {
                 } else {
                     doc.content = change.text;
                 }
-                doc.compile_module(&mut self.validator);
             }
+            doc.compile_module(&mut self.validator);
         }
     }
 
@@ -124,16 +103,18 @@ impl DocumentTracker {
         self.documents.remove(uri);
     }
 
-    pub fn get_diagnostics(&self) -> BTreeMap<Url, PublishDiagnosticsParams> {
+    pub fn get_diagnostics(&self) -> Vec<PublishDiagnosticsParams> {
         self.documents
             .iter()
-            .map(|(k, v)| {
-                (
-                    k.to_owned(),
-                    PublishDiagnosticsParams::new(k.to_owned(), v.get_diagnostics(), None),
-                )
+            .flat_map(|(url, doc)| {
+                doc.get_wgsl_errors()
+                    .map(|diagnostic| PublishDiagnosticsParams {
+                        uri: url.clone(),
+                        diagnostics: diagnostic.diagnostics_list(),
+                        version: None,
+                    })
             })
-            .collect::<BTreeMap<_, _>>()
+            .collect()
     }
 
     pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
