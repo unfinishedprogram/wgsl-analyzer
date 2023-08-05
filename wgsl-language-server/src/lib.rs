@@ -2,7 +2,6 @@ mod completion_provider;
 mod document_tracker;
 mod parser;
 mod range_tools;
-mod span_tools;
 mod wgsl_error;
 
 use document_tracker::DocumentTracker;

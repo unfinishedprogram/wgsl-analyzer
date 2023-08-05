@@ -11,7 +11,9 @@ use naga::{
 };
 
 use crate::{
-    completion_provider::CompletionProvider, range_tools::string_range, wgsl_error::WgslError,
+    completion_provider::CompletionProvider,
+    range_tools::string_range,
+    wgsl_error::{parse_error_to_lsp_diagnostic, validation_error_to_lsp_diagnostic},
 };
 
 pub struct TrackedDocument {
@@ -38,19 +40,19 @@ impl TrackedDocument {
         self.compilation_result.insert(result)
     }
 
-    pub fn get_wgsl_errors(&self) -> Option<WgslError> {
+    pub fn get_lsp_diagnostics(&self) -> Option<lsp_types::Diagnostic> {
         let Some(compilation_result) = &self.compilation_result else {
             return None;
         };
 
         match compilation_result {
-            Err(parse_error) => Some(WgslError::from_parse_err(
+            Err(parse_error) => Some(parse_error_to_lsp_diagnostic(
                 parse_error,
                 &self.content,
                 &self.uri,
             )),
-            Ok((_, Err(validation_error))) => Some(WgslError::from_validation_err(
-                validation_error,
+            Ok((_, Err(validation_error))) => Some(validation_error_to_lsp_diagnostic(
+                validation_error.clone(),
                 &self.content,
                 &self.uri,
             )),
@@ -107,10 +109,10 @@ impl DocumentTracker {
         self.documents
             .iter()
             .flat_map(|(url, doc)| {
-                doc.get_wgsl_errors()
+                doc.get_lsp_diagnostics()
                     .map(|diagnostic| PublishDiagnosticsParams {
                         uri: url.clone(),
-                        diagnostics: diagnostic.diagnostics_list(),
+                        diagnostics: vec![diagnostic],
                         version: None,
                     })
             })
