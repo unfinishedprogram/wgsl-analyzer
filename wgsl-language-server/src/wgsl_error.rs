@@ -1,10 +1,7 @@
 use codespan_reporting::diagnostic::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
-use naga::{
-    front::wgsl::ParseError,
-    valid::{NestedSpan, ValidationError},
-    WithSpan,
-};
+use naga::span::NestedSpan;
+use naga::{front::wgsl::ParseError, valid::ValidationError, WithSpan};
 
 use crate::{
     range_tools::{new_location, source_location_to_range},
