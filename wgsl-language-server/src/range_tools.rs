@@ -56,6 +56,10 @@ pub fn span_to_range(span: Span, source: &str) -> lsp_types::Range {
     lsp_types::Range { start, end }
 }
 
+pub fn range_to_span(range: std::ops::Range<usize>) -> Span {
+    Span::new(range.start as u32, range.end as u32)
+}
+
 pub fn source_location_to_range(
     location: Option<SourceLocation>,
     source: &str,

@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
+use codespan_reporting::diagnostic::Diagnostic;
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, Position, PublishDiagnosticsParams,
     TextDocumentItem, Url,
 };
 use naga::{
     front::wgsl::ParseError,
-    valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
-    Module, WithSpan,
+    valid::{Capabilities, ModuleInfo, ValidationFlags, Validator},
+    Module,
 };
 
 use crate::{
     completion_provider::CompletionProvider,
     range_tools::string_range,
-    wgsl_error::{parse_error_to_lsp_diagnostic, validation_error_to_lsp_diagnostic},
+    wgsl_error::{codespan_to_lsp_diagnostic, parse_error_to_lsp_diagnostic},
 };
 
 pub struct TrackedDocument {
@@ -23,8 +24,7 @@ pub struct TrackedDocument {
     pub compilation_result: Option<CompilationResult>,
 }
 
-type CompilationResult =
-    Result<(Module, Result<ModuleInfo, WithSpan<ValidationError>>), ParseError>;
+type CompilationResult = Result<(Module, Result<ModuleInfo, Diagnostic<()>>), ParseError>;
 
 impl TrackedDocument {
     pub fn compile_module(&mut self, validator: &mut Validator) -> &CompilationResult {
@@ -32,7 +32,7 @@ impl TrackedDocument {
         let result = match naga::front::wgsl::parse_str(&self.content) {
             Err(parse_error) => Err(parse_error),
             Ok(module) => {
-                let validation_result = validator.validate(&module);
+                let validation_result = validator.validate(&module, self.content.to_owned());
                 Ok((module, validation_result))
             }
         };
@@ -51,10 +51,11 @@ impl TrackedDocument {
                 &self.content,
                 &self.uri,
             )),
-            Ok((_, Err(validation_error))) => Some(validation_error_to_lsp_diagnostic(
+            Ok((_, Err(validation_error))) => Some(codespan_to_lsp_diagnostic(
                 validation_error.clone(),
-                &self.content,
+                None,
                 &self.uri,
+                &self.content,
             )),
             _ => None,
         }
