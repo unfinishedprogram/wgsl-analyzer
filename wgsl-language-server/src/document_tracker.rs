@@ -107,17 +107,19 @@ impl DocumentTracker {
     }
 
     pub fn get_diagnostics(&self) -> Vec<PublishDiagnosticsParams> {
-        self.documents
-            .iter()
-            .flat_map(|(url, doc)| {
-                doc.get_lsp_diagnostics()
-                    .map(|diagnostic| PublishDiagnosticsParams {
-                        uri: url.clone(),
-                        diagnostics: vec![diagnostic],
-                        version: None,
-                    })
+        let mut diagnostics = vec![];
+
+        for (url, document) in &self.documents {
+            let lsp_diagnostics: Vec<_> = document.get_lsp_diagnostics().into_iter().collect();
+
+            diagnostics.push(PublishDiagnosticsParams {
+                uri: url.clone(),
+                diagnostics: lsp_diagnostics,
+                version: None,
             })
-            .collect()
+        }
+
+        diagnostics
     }
 
     pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {

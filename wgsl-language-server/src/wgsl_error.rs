@@ -19,9 +19,19 @@ pub fn codespan_to_lsp_diagnostic(
                 .labels
                 .first()
                 .map(|label| range_to_span(label.range.clone()))
-                .unwrap(),
+                .unwrap_or_default(),
             src,
         )
+    };
+
+    let message = if diagnostic.message.is_empty() {
+        diagnostic
+            .labels
+            .first()
+            .map(|label| label.message.clone())
+            .unwrap_or_default()
+    } else {
+        diagnostic.message
     };
 
     let lsp_location = lsp_types::Location::new(url.clone(), range);
@@ -43,7 +53,7 @@ pub fn codespan_to_lsp_diagnostic(
     }
 
     lsp_types::Diagnostic {
-        message: diagnostic.message,
+        message,
         range,
         related_information: Some(related_information),
         source: Some("wgsl-language-support".to_owned()),
