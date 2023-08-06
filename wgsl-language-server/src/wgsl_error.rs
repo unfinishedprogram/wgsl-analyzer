@@ -1,7 +1,9 @@
 use lsp_types::{DiagnosticRelatedInformation, Url};
 use naga::{front::wgsl::ParseError, SourceLocation};
 
-use crate::range_tools::{new_location, range_to_span, source_location_to_range, span_to_range};
+use crate::range_tools::{
+    new_location, range_to_span, source_location_to_range, span_to_lsp_range,
+};
 
 pub fn codespan_to_lsp_diagnostic(
     diagnostic: codespan_reporting::diagnostic::Diagnostic<()>,
@@ -12,7 +14,7 @@ pub fn codespan_to_lsp_diagnostic(
     let range = if let Some(location) = location {
         source_location_to_range(Some(location), src).unwrap_or_default()
     } else {
-        span_to_range(
+        span_to_lsp_range(
             diagnostic
                 .labels
                 .first()

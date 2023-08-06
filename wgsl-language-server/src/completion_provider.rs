@@ -3,7 +3,7 @@ use lsp_types::{CompletionItem, CompletionItemKind, Position};
 use crate::{
     document_tracker::TrackedDocument,
     parser::matching_bracket_index,
-    range_tools::{source_location_to_range, span_to_range, RangeTools},
+    range_tools::{source_location_to_range, span_to_lsp_range, RangeTools},
 };
 
 pub trait CompletionProvider {
@@ -68,7 +68,7 @@ impl CompletionProvider for TrackedDocument {
         let mut res = vec![];
 
         for (handle, name) in function.named_expressions.iter() {
-            let range = span_to_range(function.expressions.get_span(*handle), &self.content);
+            let range = span_to_lsp_range(function.expressions.get_span(*handle), &self.content);
             res.push(detailed_completion_item(
                 name.to_owned(),
                 CompletionItemKind::Variable,
@@ -77,7 +77,7 @@ impl CompletionProvider for TrackedDocument {
         }
 
         for (handle, variable) in function.local_variables.iter() {
-            let range = span_to_range(function.local_variables.get_span(handle), &self.content);
+            let range = span_to_lsp_range(function.local_variables.get_span(handle), &self.content);
 
             if range.start < *position {
                 if let Some(name) = &variable.name {

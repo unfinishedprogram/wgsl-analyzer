@@ -47,7 +47,7 @@ pub fn position_at_char_offset(source: &str, char_offset: usize) -> Position {
     Position::default()
 }
 
-pub fn span_to_range(span: Span, source: &str) -> lsp_types::Range {
+pub fn span_to_lsp_range(span: Span, source: &str) -> lsp_types::Range {
     let std::ops::Range { start, end } = span.to_range().unwrap();
 
     let start = position_at_char_offset(source, start);
