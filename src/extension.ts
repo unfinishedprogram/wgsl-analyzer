@@ -10,10 +10,6 @@ const extensionName = 'wgsl-analyzer';
 
 const clients: Map<string, LanguageClient> = new Map();
 
-function wgslFilesInWorkspacePattern(folder: WorkspaceFolder) {
-  return new RelativePattern(folder, '**/*.wgsl');
-}
-
 export async function activate(context: ExtensionContext) {
   console.info("Starting WGSL Language Support...")
 
@@ -34,7 +30,7 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
   console.error("Server Module URI", server);
 
   const createChangeWatcher = workspace.createFileSystemWatcher(
-    wgslFilesInWorkspacePattern(folder),
+    new RelativePattern(folder, '**/*.wgsl'),
     false,
     false,
     true
@@ -42,13 +38,12 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
 
   context.subscriptions.push(createChangeWatcher);
 
-  const debugOpts = {
-    execArgv: ['--nolazy', `--inspect=${6011 + clients.size}`],
-  };
+  const run_opts = { module: server, transport: TransportKind.ipc };
+  const debug_opts = { ...run_opts, options: { execArgv: ['--nolazy', `--inspect=${6011 + clients.size}`] } }
 
   const serverOpts = {
-    run: { module: server, transport: TransportKind.ipc },
-    debug: { module: server, transport: TransportKind.ipc, options: debugOpts },
+    run: run_opts,
+    debug: debug_opts,
   };
 
   const clientOpts: LanguageClientOptions = {
@@ -62,15 +57,10 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
   const client = new LanguageClient(extensionName, serverOpts, clientOpts);
   clients.set(folder.uri.toString(), client);
   await client.start();
-  console.log(client);
 }
 
 async function stopClient(folder: string) {
-  const exists = clients.get(folder);
-  if (exists) {
-    const client = exists;
-    await client.stop();
-  }
+  await clients.get(folder)?.stop();
   clients.delete(folder);
 }
 
