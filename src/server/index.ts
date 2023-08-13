@@ -8,7 +8,8 @@ import { WGSLLanguageServer } from '../../dist/wgsl_language_server';
 
 // Create LSP connection
 const connection = createConnection(ProposedFeatures.all);
-console.log("STARTING LSP");
+
+console.log("STARTING: wgsl-language-server");
 
 const sendDiagnosticsCallback = (params: PublishDiagnosticsParams) =>
     connection.sendDiagnostics(params);
@@ -36,7 +37,7 @@ connection.onInitialize(() => {
                 workspaceFolders: { supported: true },
                 fileOperations: {
                     didDelete: {
-                        filters: [{ pattern: { /* matches: 'folder', */ glob: '**' } }],
+                        filters: [{ pattern: { glob: '**' } }],
                     },
                 },
             },
