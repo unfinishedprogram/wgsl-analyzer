@@ -29,7 +29,7 @@ impl CompletionProvider for TrackedDocument {
     }
 
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
-        let Some(Ok((module, _))) = &self.compilation_result else {
+        let Some(module) = &self.last_valid_module else {
             return vec![];
         };
 
@@ -61,18 +61,23 @@ impl CompletionProvider for TrackedDocument {
         position: &Position,
         function: naga::Handle<naga::Function>,
     ) -> Vec<CompletionItem> {
-        let Some(Ok((module, _))) = &self.compilation_result else {
+        let Some(module) = &self.last_valid_module else {
             return vec![];
         };
         let function = &module.functions[function];
         let mut res = vec![];
 
         for (handle, name) in function.named_expressions.iter() {
-            let range = span_to_lsp_range(function.expressions.get_span(*handle), &self.content);
+            let range = function
+                .expressions
+                .get_span(*handle)
+                .to_range()
+                .unwrap_or_default();
+
             res.push(detailed_completion_item(
                 name.to_owned(),
                 CompletionItemKind::Variable,
-                &format!("{:?}", range),
+                &self.content[range],
             ))
         }
 
@@ -97,7 +102,7 @@ impl CompletionProvider for TrackedDocument {
         res
     }
     fn get_types(&self, _position: &Position) -> Vec<CompletionItem> {
-        let Some(Ok((module, _))) = &self.compilation_result else {
+        let Some(module) = &self.last_valid_module else {
             return vec![];
         };
 
@@ -115,7 +120,7 @@ impl CompletionProvider for TrackedDocument {
         res
     }
     fn get_constants(&self, _position: &Position) -> Vec<CompletionItem> {
-        let Some(Ok((module, _))) = &self.compilation_result else {
+        let Some(module) = &self.last_valid_module else {
             return vec![];
         };
 

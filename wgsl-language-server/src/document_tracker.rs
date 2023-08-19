@@ -23,6 +23,7 @@ pub struct TrackedDocument {
     pub content: String,
     pub version: i32,
     pub compilation_result: Option<CompilationResult>,
+    pub last_valid_module: Option<Module>,
 }
 
 type CompilationResult = Result<(Module, Result<ModuleInfo, Diagnostic<()>>), ParseError>;
@@ -33,6 +34,7 @@ impl TrackedDocument {
         let result = match naga::front::wgsl::parse_str(&self.content) {
             Err(parse_error) => Err(parse_error),
             Ok(module) => {
+                self.last_valid_module = Some(module.clone());
                 let validation_result = validator.validate(&module, self.content.to_owned());
                 Ok((module, validation_result))
             }
@@ -82,6 +84,7 @@ impl DocumentTracker {
             content: doc.text.clone(),
             version: doc.version,
             compilation_result: None,
+            last_valid_module: None,
         };
 
         document.compile_module(&mut self.validator);
