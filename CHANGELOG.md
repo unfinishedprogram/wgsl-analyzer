@@ -23,3 +23,16 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Fixed
 
 - Incorrect usage of source field in LSP diagnostic
+
+## [0.3.0] 
+
+### Added
+
+- `DocumentSymbolProvider` for document outline view
+### Changed
+
+- Improved diagnostic messages
+
+### Fixed
+
+- Corrected details of completion options
