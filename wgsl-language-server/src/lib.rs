@@ -2,6 +2,7 @@ mod completion_provider;
 mod document_tracker;
 mod parser;
 mod range_tools;
+mod symbol_provider;
 mod wgsl_error;
 
 use document_tracker::DocumentTracker;
@@ -52,6 +53,13 @@ impl WGSLLanguageServer {
         } = from_value(params).unwrap();
 
         let res = self.get_auto_complete(text_document, position);
+        serde_json::to_string(&res).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = onDocumentSymbol)]
+    pub fn on_document_symbol(&mut self, _params: JsValue) -> String {
+        log("Request for document symbol");
+        let res = self.documents.get_symbols();
         serde_json::to_string(&res).unwrap()
     }
 

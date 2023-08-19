@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use codespan_reporting::diagnostic::Diagnostic;
 use lsp_types::{
-    CompletionItem, DidChangeTextDocumentParams, Position, PublishDiagnosticsParams,
-    TextDocumentItem, Url,
+    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
+    PublishDiagnosticsParams, TextDocumentItem, Url,
 };
 use naga::{
     front::wgsl::ParseError,
@@ -14,6 +14,7 @@ use naga::{
 use crate::{
     completion_provider::CompletionProvider,
     range_tools::string_range,
+    symbol_provider::SymbolProvider,
     wgsl_error::{codespan_to_lsp_diagnostic, parse_error_to_lsp_diagnostic},
 };
 
@@ -127,5 +128,12 @@ impl DocumentTracker {
             return doc.get_completion(position);
         }
         vec![]
+    }
+
+    pub fn get_symbols(&self) -> Vec<DocumentSymbol> {
+        self.documents
+            .values()
+            .flat_map(|doc| doc.get_symbols())
+            .collect()
     }
 }
