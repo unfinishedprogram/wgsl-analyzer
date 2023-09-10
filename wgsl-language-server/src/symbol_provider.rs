@@ -80,6 +80,7 @@ impl SymbolProvider for TrackedDocument {
         let detail = Some(item.parse_detail(span_content).to_owned());
 
         #[allow(deprecated)]
+        // https://github.com/gluon-lang/lsp-types/issues/226
         DocumentSymbol {
             name,
             kind: item.symbol_kind(),
