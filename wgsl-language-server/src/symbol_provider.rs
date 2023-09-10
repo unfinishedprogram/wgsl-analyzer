@@ -79,6 +79,7 @@ impl SymbolProvider for TrackedDocument {
 
         let detail = Some(item.parse_detail(span_content).to_owned());
 
+        #[allow(deprecated)]
         DocumentSymbol {
             name,
             kind: item.symbol_kind(),
