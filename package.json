@@ -13,14 +13,15 @@
   },
   "icon": "icon.png",
   "scripts": {
-    "vscode:prepublish": "npm run build",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "build-wasm": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --minify --platform=node",
-    "test-compile": "tsc -p ./",
-    "build": "npm run build-wasm; npm run server; npm run esbuild-base",
+    "build-wasm": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --release",
+    "build-client": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --minify --external:vscode",
+    "build-server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node --minify",
+    "build-wasm-dev": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --dev",
+    "build-client-dev": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --external:vscode",
+    "build-server-dev": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
+    "build-all": "npm run build-wasm; npm run build-server; npm run build-client",
+    "build-all-dev": "npm run build-wasm-dev; npm run build-server-dev; npm run build-client-dev",
+    "vscode:prepublish": "npm run build-all",
     "publish": "vsce publish"
   },
   "main": "./dist/extension.js",
@@ -39,7 +40,6 @@
       {
         "id": "wgsl",
         "aliases": [
-          "wgsl",
           "wgsl"
         ],
         "extensions": [
