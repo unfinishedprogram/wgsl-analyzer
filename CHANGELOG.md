@@ -36,3 +36,9 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Fixed
 
 - Corrected details of completion options
+
+## [0.3.1]
+
+### Fixed
+
+- [Incorrect diagnostic due to detection of entry-point outputs](https://github.com/unfinishedprogram/wgsl-analyzer/issues/1)
