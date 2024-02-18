@@ -8,7 +8,7 @@ fn main() {
     let source = include_str!("test.wgsl");
     let token_result = tokenize(source);
     let ast_result = create_ast(&token_result);
-    let module = Module::from_ast(ast_result);
+    let module = Module::from_ast(ast_result, source.to_owned());
 
     match module {
         Ok(_) => println!("Module is valid"),
