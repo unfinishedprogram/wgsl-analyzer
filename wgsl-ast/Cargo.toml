@@ -1,0 +1,17 @@
+[package]
+type = "lib"
+name = "wgsl-ast"     # the name of the package
+version = "0.1.0"     # the current version, obeying semver
+rust-version = "1.73"
+edition = "2021"
+
+[dependencies]
+ariadne = "0.3.0"
+chumsky = { version = "1.0.0-alpha.6", features = [
+    "regex",
+    "memoization",
+    "label",
+    "pratt",
+] }
+regex = "1.10.2"
+unicode-ident = "1.0.12"
