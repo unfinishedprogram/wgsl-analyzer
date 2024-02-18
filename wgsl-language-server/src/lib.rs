@@ -1,9 +1,8 @@
-mod completion_provider;
+mod diagnostic;
 mod document_tracker;
 mod parser;
 mod range_tools;
-mod symbol_provider;
-mod wgsl_error;
+// mod symbol_provider;
 
 use document_tracker::DocumentTracker;
 

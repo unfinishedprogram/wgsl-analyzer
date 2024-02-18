@@ -8,7 +8,6 @@ use crate::{
 
 pub trait CompletionProvider {
     fn get_completion(&self, position: &Position) -> Vec<CompletionItem>;
-
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem>;
     fn get_locals(
         &self,
@@ -56,6 +55,7 @@ impl CompletionProvider for TrackedDocument {
 
         res
     }
+
     fn get_locals(
         &self,
         position: &Position,
@@ -101,6 +101,7 @@ impl CompletionProvider for TrackedDocument {
 
         res
     }
+
     fn get_types(&self, _position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];
@@ -119,6 +120,7 @@ impl CompletionProvider for TrackedDocument {
         }
         res
     }
+
     fn get_constants(&self, _position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];

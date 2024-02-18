@@ -11,12 +11,12 @@ codespan-reporting = "0.11.1"
 console_error_panic_hook = "0.1.6"
 js-sys = "0.3.53"
 lsp-types = "0.90.0"
-naga = { path = "../../../naga", features = ["wgsl-in", "clone"] }
 regex = "1.9.3"
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.3.1"
 serde_json = "1.0.99"
 wasm-bindgen = "0.2.76"
+wgsl-ast = { path = "../wgsl-ast" }
 
 [profile.release]
 lto = true

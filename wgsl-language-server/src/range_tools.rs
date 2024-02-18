@@ -1,5 +1,4 @@
 use lsp_types::{Location, Position};
-use naga::{SourceLocation, Span};
 
 pub trait RangeTools {
     fn contains_line(&self, position: &Position) -> bool;
@@ -47,31 +46,37 @@ pub fn position_at_char_offset(source: &str, char_offset: usize) -> Position {
     Position::default()
 }
 
-pub fn span_to_lsp_range(span: Span, source: &str) -> lsp_types::Range {
-    let std::ops::Range { start, end } = span.to_range().unwrap_or_default();
+// pub fn span_to_lsp_range(span: Span, source: &str) -> lsp_types::Range {
+//     let std::ops::Range { start, end } = span.to_range().unwrap_or_default();
 
-    let start = position_at_char_offset(source, start);
-    let end = position_at_char_offset(source, end);
+//     let start = position_at_char_offset(source, start);
+//     let end = position_at_char_offset(source, end);
 
+//     lsp_types::Range { start, end }
+// }
+
+// pub fn range_to_span(range: std::ops::Range<usize>) -> Span {
+//     Span::new(range.start as u32, range.end as u32)
+// }
+
+// pub fn source_location_to_range(
+//     location: Option<SourceLocation>,
+//     source: &str,
+// ) -> Option<lsp_types::Range> {
+//     let Some(location) = location else {
+//         return None;
+//     };
+
+//     let start = position_at_char_offset(source, location.offset as usize);
+//     let end = position_at_char_offset(source, (location.offset + location.length) as usize);
+
+//     Some(lsp_types::Range { start, end })
+// }
+
+pub fn lsp_range_from_char_span(source: &str, span: std::ops::Range<usize>) -> lsp_types::Range {
+    let start = position_at_char_offset(source, span.start);
+    let end = position_at_char_offset(source, span.end);
     lsp_types::Range { start, end }
-}
-
-pub fn range_to_span(range: std::ops::Range<usize>) -> Span {
-    Span::new(range.start as u32, range.end as u32)
-}
-
-pub fn source_location_to_range(
-    location: Option<SourceLocation>,
-    source: &str,
-) -> Option<lsp_types::Range> {
-    let Some(location) = location else {
-        return None;
-    };
-
-    let start = position_at_char_offset(source, location.offset as usize);
-    let end = position_at_char_offset(source, (location.offset + location.length) as usize);
-
-    Some(lsp_types::Range { start, end })
 }
 
 pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Url) -> Location {
