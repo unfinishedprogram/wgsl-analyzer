@@ -25,12 +25,6 @@ pub fn ast_parser<'tokens, 'src: 'tokens>(
         .collect()
 }
 
-pub struct AbstractSyntax<'src> {
-    pub source: &'src str,
-    pub tokens: Vec<(Token<'src>, SimpleSpan)>,
-    pub ast: Vec<Statement>,
-}
-
 #[derive(Debug)]
 pub enum ModuleError<'a> {
     Tokenizer(Rich<'a, char>),

@@ -5,6 +5,8 @@ use ariadne::{Label, Report};
 use chumsky::span::SimpleSpan;
 use std::ops::Range;
 
+use crate::front::ast::ModuleError;
+
 pub struct Diagnostic {
     pub severity: Severity,
     pub span: SimpleSpan,
@@ -15,6 +17,17 @@ pub struct Diagnostic {
 pub struct DiagnosticRelatedInfo {
     pub span: SimpleSpan,
     pub message: String,
+}
+
+impl From<&ModuleError<'_>> for Diagnostic {
+    fn from(err: &ModuleError) -> Self {
+        Self {
+            severity: Severity::Error,
+            span: *err.span(),
+            message: err.message(),
+            related_info: Vec::new(),
+        }
+    }
 }
 
 impl Diagnostic {

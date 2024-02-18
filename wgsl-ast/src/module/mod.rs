@@ -1,6 +1,6 @@
 use crate::{
     diagnostic::Diagnostic,
-    front::{ast::statement::Statement, span::Spanned},
+    front::ast::{create_ast, tokenize, AstResult},
 };
 
 pub mod declaration;
@@ -26,7 +26,18 @@ pub struct Module {
 
 // Validation must be done in multiple passes:
 impl Module {
-    pub fn from_ast(ast: Vec<Spanned<Statement>>) -> Result<Self, Diagnostic> {
-        Ok(Self {})
+    pub fn from_ast(ast: AstResult) -> Result<Self, Diagnostic> {
+        if ast.errors.is_empty() {
+            Ok(Self {})
+        } else {
+            let err = &ast.errors[0];
+            Err(err.into())
+        }
+    }
+
+    pub fn from_source(source: &str) -> Result<Self, Diagnostic> {
+        let token_result = tokenize(source);
+        let ast_result = create_ast(&token_result);
+        Self::from_ast(ast_result)
     }
 }

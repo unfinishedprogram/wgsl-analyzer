@@ -7,10 +7,10 @@ use lsp_types::{
 use wgsl_ast::module::Module;
 
 use crate::{
-    // completion_provider::CompletionProvider,
-    // symbol_provider::SymbolProvider,
     diagnostic::wgsl_error_to_lsp_diagnostic,
     range_tools::string_range,
+    // completion_provider::CompletionProvider,
+    // symbol_provider::SymbolProvider,
 };
 
 pub struct TrackedDocument {
@@ -23,24 +23,11 @@ pub struct TrackedDocument {
 
 impl TrackedDocument {
     pub fn compile_module(&mut self) -> &Result<Module, wgsl_ast::diagnostic::Diagnostic> {
-        // let result = match wgsl_ast::module::Module::from_source(&self.content) {
-        //     // Err(parse_error) => Err(parse_error),
-        //     // Ok(module) => {
-        //     //     self.last_valid_module = Some(module.clone());
-        //     //     let validation_result = validator.validate(&module, self.content.to_owned());
-        //     //     Ok((module, validation_result))
-        //     // }
-        // };
-
         let result = wgsl_ast::module::Module::from_source(&self.content);
         self.compilation_result.insert(result)
     }
 
     pub fn get_lsp_diagnostics(&self) -> Option<lsp_types::Diagnostic> {
-        // let Some(compilation_result) = &self.compilation_result else {
-        //     return None;
-        // };
-
         match &self.compilation_result {
             Some(Err(diagnostic)) => Some(wgsl_error_to_lsp_diagnostic(
                 self.uri.clone(),
@@ -49,35 +36,15 @@ impl TrackedDocument {
             )),
             _ => None,
         }
-
-        // match compilation_result {
-        //     Err(parse_error) => Some(parse_error_to_lsp_diagnostic(
-        //         parse_error,
-        //         &self.content,
-        //         &self.uri,
-        //     )),
-        //     Ok((_, Err(validation_error))) => Some(codespan_to_lsp_diagnostic(
-        //         validation_error.clone(),
-        //         None,
-        //         &self.uri,
-        //         &self.content,
-        //     )),
-        //     _ => None,
-        // }
     }
 }
 
+#[derive(Default)]
 pub struct DocumentTracker {
     documents: HashMap<Url, TrackedDocument>,
 }
 
 impl DocumentTracker {
-    pub fn new() -> Self {
-        Self {
-            documents: Default::default(),
-        }
-    }
-
     pub fn insert(&mut self, doc: TextDocumentItem) {
         let mut document = TrackedDocument {
             uri: doc.uri.to_owned(),

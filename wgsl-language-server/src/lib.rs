@@ -1,6 +1,5 @@
 mod diagnostic;
 mod document_tracker;
-mod parser;
 mod range_tools;
 // mod symbol_provider;
 
@@ -38,7 +37,7 @@ impl WGSLLanguageServer {
         console_error_panic_hook::set_once();
         log("WGSL Language Server Created");
         Self {
-            documents: DocumentTracker::new(),
+            documents: DocumentTracker::default(),
             send_diagnostics_callback: send_diagnostics_callback.clone(),
         }
     }
