@@ -11,7 +11,7 @@ use self::relational_expression::{
 
 use super::{ParserInput, RichErr};
 use crate::front::{
-    span::{SpanAble, Spanned, WithSpan},
+    span::{map_span, SpanAble, Spanned, WithSpan},
     token::{Literal, Token},
 };
 
@@ -28,13 +28,12 @@ pub struct ComponentOrSwizzleSpecifier(
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateElaboratedIdent(String, Option<TemplateList>);
+pub struct TemplateElaboratedIdent(pub String, pub Option<TemplateList>);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateList(pub Vec<Expression>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateList(Vec<Expression>);
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CallPhrase(TemplateElaboratedIdent, ArgumentExpressionList);
+pub struct CallPhrase(Spanned<TemplateElaboratedIdent>, ArgumentExpressionList);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArgumentExpressionList(Vec<Expression>);
@@ -42,7 +41,7 @@ pub struct ArgumentExpressionList(Vec<Expression>);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpressionInner {
     None,
-    Ident(TemplateElaboratedIdent),
+    Ident(Spanned<TemplateElaboratedIdent>),
     CallExpression(CallPhrase),
     Literal(Literal),
     ParenExpression(Box<Expression>),
@@ -334,14 +333,19 @@ pub fn template_elaborated_ident<'tokens, 'src: 'tokens>(
     expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression, RichErr<'src, 'tokens>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, TemplateElaboratedIdent, RichErr<'src, 'tokens>>
-       + Clone {
+) -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    Spanned<TemplateElaboratedIdent>,
+    RichErr<'src, 'tokens>,
+> + Clone {
     let ident = select!(Token::Ident(ident) => ident.to_owned());
     let template_list = template_list(expression);
 
     ident
         .then(template_list.or_not())
         .map(|(ident, template)| TemplateElaboratedIdent(ident, template))
+        .map_with(map_span)
 }
 
 pub fn call_expression<'tokens, 'src: 'tokens>(
@@ -381,5 +385,5 @@ pub fn primary_expression<'tokens, 'src: 'tokens>(
         call_expression(expression.clone()).map(ExpressionInner::CallExpression),
         template_elaborated_ident(expression.clone()).map(ExpressionInner::Ident),
     ))
-    .map_with(|expr, e| expr.with_span(e.span()))
+    .map_with(map_span)
 }

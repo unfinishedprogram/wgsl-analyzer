@@ -126,7 +126,7 @@ pub enum AssignmentOperator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OptionallyTypedIdent(pub String, pub Option<TemplateElaboratedIdent>);
+pub struct OptionallyTypedIdent(pub String, pub Option<Spanned<TemplateElaboratedIdent>>);
 
 fn assignment_operator<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, AssignmentOperator, RichErr<'src, 'tokens>> + Clone

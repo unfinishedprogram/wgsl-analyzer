@@ -5,7 +5,7 @@ use chumsky::{
 };
 use std::{
     fmt::{Debug, Formatter},
-    ops::{Deref, DerefMut},
+    ops::{Deref, Index},
 };
 
 pub struct Spanned<T> {
@@ -18,12 +18,6 @@ impl<T> Deref for Spanned<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
-    }
-}
-
-impl<T> DerefMut for Spanned<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
     }
 }
 
@@ -93,22 +87,6 @@ impl<T> WithSpan<T> for Spanned<T> {
     }
 }
 
-// map_extra(map_span);
-
-// fn map_span<'a, T, I, E>(v: T, extra: &mut MapExtra<'a, 'a, I, E>) -> Spanned<T>
-// where
-//     I: chumsky::input::Input<'a>,
-//     // SpannedInput<Token<'_>, SimpleSpan, &[(Token<'_>, SimpleSpan)]>
-//     E: ParserExtra<'a, I>,
-// {
-//     v.with_span(extra.span())
-// }
-
-// fn map_span<'a, 'b, I: Input<'a>, E: ParserExtra<'a, I>, MapExtra<'a, 'b, I, E>>
-// (v:I, extra: &mut MapExtra<'a, 'b, I, E>) -> Spanned<I> {
-//     v.with_span(extra.span())
-// }
-
 pub fn map_span<'a, O, I: Input<'a>, E: ParserExtra<'a, I>>(
     v: O,
     extra: &mut MapExtra<'a, '_, I, E>,
@@ -118,4 +96,18 @@ where
     chumsky::span::SimpleSpan: std::convert::From<<I as chumsky::input::Input<'a>>::Span>,
 {
     v.with_span(extra.span().into())
+}
+
+impl<T> Index<Spanned<T>> for str {
+    type Output = str;
+    fn index(&self, index: Spanned<T>) -> &str {
+        &self[index.span().into_range()]
+    }
+}
+
+impl<T> Index<&Spanned<T>> for str {
+    type Output = str;
+    fn index(&self, index: &Spanned<T>) -> &str {
+        &self[index.span().into_range()]
+    }
 }

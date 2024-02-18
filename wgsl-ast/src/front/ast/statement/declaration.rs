@@ -17,56 +17,68 @@ use crate::front::{
 use super::{compound_statement, optionally_typed_ident, OptionallyTypedIdent, Statement};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Declaration {
-    Variable {
-        attributes: Vec<Attribute>,
-        ident: Spanned<OptionallyTypedIdent>,
-        scope: Option<TemplateList>,
-        initial_value: Option<Expression>,
-    },
+pub struct Variable {
+    pub attributes: Vec<Attribute>,
+    pub ident: Spanned<OptionallyTypedIdent>,
+    pub scope: Option<TemplateList>,
+    pub initial_value: Option<Expression>,
+}
 
-    ModuleConstant {
-        ident: Spanned<OptionallyTypedIdent>,
-        value: Expression,
-    },
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModuleConstant {
+    pub ident: Spanned<OptionallyTypedIdent>,
+    pub value: Expression,
+}
 
-    LocalConstant {
-        ident: Spanned<OptionallyTypedIdent>,
-        value: Expression,
-    },
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalConstant {
+    pub ident: Spanned<OptionallyTypedIdent>,
+    pub value: Expression,
+}
 
-    TypeAlias {
-        ident: Spanned<String>,
-        value: TemplateElaboratedIdent,
-    },
-
-    Struct {
-        attributes: Vec<Attribute>,
-        ident: Spanned<String>,
-        members: Vec<StructMember>,
-    },
-
-    Function {
-        attributes: Vec<Attribute>,
-        ident: Spanned<String>,
-        parameters: Vec<FunctionParameter>,
-        return_type: Option<(Vec<Attribute>, TemplateElaboratedIdent)>,
-        body: Vec<Statement>,
-    },
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeAlias {
+    pub ident: Spanned<String>,
+    pub value: Spanned<TemplateElaboratedIdent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructMember {
     pub attributes: Vec<Attribute>,
     pub ident: Spanned<String>,
-    pub value: TemplateElaboratedIdent,
+    pub value: Spanned<TemplateElaboratedIdent>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Struct {
+    pub attributes: Vec<Attribute>,
+    pub ident: Spanned<String>,
+    pub members: Vec<Spanned<StructMember>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Function {
+    pub attributes: Vec<Attribute>,
+    pub ident: Spanned<String>,
+    pub parameters: Vec<FunctionParameter>,
+    pub return_type: Option<(Vec<Attribute>, Spanned<TemplateElaboratedIdent>)>,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Declaration {
+    Variable(Variable),
+    ModuleConstant(ModuleConstant),
+    LocalConstant(LocalConstant),
+    TypeAlias(TypeAlias),
+    Struct(Struct),
+    Function(Function),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionParameter {
     attributes: Vec<Attribute>,
     ident: Spanned<String>,
-    value: TemplateElaboratedIdent,
+    value: Spanned<TemplateElaboratedIdent>,
 }
 
 pub fn variable_or_value_decl<'tokens, 'src: 'tokens>(
@@ -80,25 +92,25 @@ pub fn variable_or_value_decl<'tokens, 'src: 'tokens>(
                 .ignore_then(expression())
                 .or_not(),
         )
-        .map(
-            |(((attributes, scope), ident), initial_value)| Declaration::Variable {
+        .map(|(((attributes, scope), ident), initial_value)| {
+            Declaration::Variable(Variable {
                 attributes,
                 scope,
                 ident,
                 initial_value,
-            },
-        )
+            })
+        })
         .boxed();
 
     let module_const = just(Token::Keyword(Keyword::Const))
         .ignore_then(optionally_typed_ident(expression()))
         .then(just(Token::SyntaxToken("=")).ignore_then(expression()))
-        .map(|(ident, value)| Declaration::ModuleConstant { ident, value });
+        .map(|(ident, value)| Declaration::ModuleConstant(ModuleConstant { ident, value }));
 
     let local_const = just(Token::Keyword(Keyword::Let))
         .ignore_then(optionally_typed_ident(expression()))
         .then(just(Token::SyntaxToken("=")).ignore_then(expression()))
-        .map(|(ident, value)| Declaration::LocalConstant { ident, value });
+        .map(|(ident, value)| Declaration::LocalConstant(LocalConstant { ident, value }));
 
     choice((variable_decl, module_const, local_const)).boxed()
 }
@@ -108,7 +120,7 @@ fn type_alias_decl<'tokens, 'src: 'tokens>(
     just(Token::Keyword(Keyword::Alias))
         .ignore_then(select!(Token::Ident(ident) => ident.to_owned()).map_with(map_span))
         .then(just(Token::SyntaxToken("=")).ignore_then(template_elaborated_ident(expression())))
-        .map(|(ident, value)| Declaration::TypeAlias { ident, value })
+        .map(|(ident, value)| Declaration::TypeAlias(TypeAlias { ident, value }))
         .boxed()
 }
 
@@ -128,6 +140,7 @@ fn struct_decl<'tokens, 'src: 'tokens>(
             ident,
             value,
         })
+        .map_with(map_span)
         .boxed();
 
     let struct_body = struct_member
@@ -143,10 +156,12 @@ fn struct_decl<'tokens, 'src: 'tokens>(
                 .ignore_then(select!(Token::Ident(ident) => ident.to_owned()).map_with(map_span))
                 .then(struct_body),
         )
-        .map(|(attributes, (ident, members))| Declaration::Struct {
-            attributes,
-            ident,
-            members,
+        .map(|(attributes, (ident, members))| {
+            Declaration::Struct(Struct {
+                attributes,
+                ident,
+                members,
+            })
         })
         .boxed()
 }
@@ -191,15 +206,15 @@ fn function_decl<'tokens, 'src: 'tokens>(
                 .then(return_type)
                 .then(compound_statement(stmt)),
         )
-        .map(
-            |(attributes, (((ident, parameters), return_type), body))| Declaration::Function {
+        .map(|(attributes, (((ident, parameters), return_type), body))| {
+            Declaration::Function(Function {
                 attributes,
                 ident,
                 parameters,
                 return_type,
                 body,
-            },
-        )
+            })
+        })
         .boxed()
 }
 
