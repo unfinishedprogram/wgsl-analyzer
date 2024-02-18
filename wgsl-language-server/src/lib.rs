@@ -1,7 +1,7 @@
 mod diagnostic;
 mod document_tracker;
 mod range_tools;
-// mod symbol_provider;
+mod symbol_provider;
 
 use document_tracker::DocumentTracker;
 

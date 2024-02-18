@@ -71,6 +71,7 @@ pub struct AstResult<'a> {
 
 pub fn tokenize(source: &str) -> TokenizationResult {
     let (mut tokens, errors) = tokenizer().parse(source).into_output_errors();
+
     if let Some(tokens) = &mut tokens {
         insert_template_tokens(source, tokens);
     }
@@ -82,13 +83,10 @@ pub fn tokenize(source: &str) -> TokenizationResult {
 }
 
 pub fn create_ast<'a>(source: &'a TokenizationResult) -> AstResult<'a> {
+    let tokens = source.tokens.as_slice();
+
     let (ast, errors) = ast_parser()
-        .parse(
-            source
-                .tokens
-                .as_slice()
-                .spanned((source.tokens.len()..source.tokens.len()).into()),
-        )
+        .parse(tokens.spanned((source.tokens.len()..source.tokens.len()).into()))
         .into_output_errors();
 
     AstResult {

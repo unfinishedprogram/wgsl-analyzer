@@ -4,7 +4,7 @@ pub mod declaration;
 use chumsky::prelude::*;
 
 use crate::front::{
-    span::{SpanAble, Spanned},
+    span::{map_span, SpanAble, Spanned},
     token::Keyword,
 };
 
@@ -126,7 +126,7 @@ pub enum AssignmentOperator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OptionallyTypedIdent(String, Option<TemplateElaboratedIdent>);
+pub struct OptionallyTypedIdent(pub String, pub Option<TemplateElaboratedIdent>);
 
 fn assignment_operator<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, AssignmentOperator, RichErr<'src, 'tokens>> + Clone
@@ -387,8 +387,12 @@ fn optionally_typed_ident<'tokens, 'src: 'tokens>(
     expr: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression, RichErr<'src, 'tokens>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, OptionallyTypedIdent, RichErr<'src, 'tokens>> + Clone
-{
+) -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    Spanned<OptionallyTypedIdent>,
+    RichErr<'src, 'tokens>,
+> + Clone {
     let type_specifier = template_elaborated_ident(expr);
 
     select!(Token::Ident(ident) => ident.to_owned())
@@ -398,6 +402,7 @@ fn optionally_typed_ident<'tokens, 'src: 'tokens>(
                 .or_not(),
         )
         .map(|(ident, type_specifier)| OptionallyTypedIdent(ident, type_specifier))
+        .map_with(map_span)
         .boxed()
 }
 

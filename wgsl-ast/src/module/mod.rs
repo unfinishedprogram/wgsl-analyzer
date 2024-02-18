@@ -1,6 +1,13 @@
 use crate::{
     diagnostic::Diagnostic,
-    front::ast::{create_ast, tokenize, AstResult},
+    front::{
+        ast::{
+            create_ast,
+            statement::{declaration::Declaration, Statement},
+            tokenize, AstResult,
+        },
+        span::{SpanAble, Spanned},
+    },
 };
 
 pub mod declaration;
@@ -13,6 +20,8 @@ mod store;
 // Therefore, it must maintain span information, in order to provide document hints/completions
 
 pub struct Module {
+    pub source: String,
+    pub ast: Vec<Spanned<Statement>>,
     // directives: Vec<Directive>, TODO
     // functions: Vec<Function>,
     // types: Vec<Type>,
@@ -26,9 +35,12 @@ pub struct Module {
 
 // Validation must be done in multiple passes:
 impl Module {
-    pub fn from_ast(ast: AstResult) -> Result<Self, Diagnostic> {
+    pub fn from_ast(ast: AstResult, source: String) -> Result<Self, Diagnostic> {
         if ast.errors.is_empty() {
-            Ok(Self {})
+            Ok(Self {
+                source,
+                ast: ast.ast,
+            })
         } else {
             let err = &ast.errors[0];
             Err(err.into())
@@ -38,6 +50,17 @@ impl Module {
     pub fn from_source(source: &str) -> Result<Self, Diagnostic> {
         let token_result = tokenize(source);
         let ast_result = create_ast(&token_result);
-        Self::from_ast(ast_result)
+
+        Self::from_ast(ast_result, source.to_owned())
+    }
+
+    pub fn declarations(&self) -> Vec<Spanned<Declaration>> {
+        self.ast
+            .iter()
+            .filter_map(|Spanned { inner, span }| match inner {
+                Statement::Declaration(declaration) => Some(declaration.clone().with_span(*span)),
+                _ => None,
+            })
+            .collect()
     }
 }

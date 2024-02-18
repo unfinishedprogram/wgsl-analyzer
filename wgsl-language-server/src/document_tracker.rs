@@ -10,7 +10,7 @@ use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
     range_tools::string_range,
     // completion_provider::CompletionProvider,
-    // symbol_provider::SymbolProvider,
+    symbol_provider::SymbolProvider,
 };
 
 pub struct TrackedDocument {
@@ -94,18 +94,13 @@ impl DocumentTracker {
     }
 
     pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
-        // if let Some(doc) = self.documents.get(url) {
-        //     return doc.get_completion(position);
-        // }
         vec![]
     }
 
     pub fn get_symbols(&self) -> Vec<DocumentSymbol> {
-        // self.documents
-        //     .values()
-        //     .flat_map(|doc| doc.get_symbols())
-        //     .collect()
-
-        vec![]
+        self.documents
+            .values()
+            .flat_map(|doc| doc.get_symbols())
+            .collect()
     }
 }
