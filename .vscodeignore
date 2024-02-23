@@ -4,6 +4,7 @@
 .gitattributes
 src
 wgsl-language-server
+wgsl-ast
 node_modules
 package-lock.json
 tsconfig.json
