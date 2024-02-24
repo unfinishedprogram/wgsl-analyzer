@@ -46,32 +46,26 @@ pub fn find_templates(src: &str) -> Vec<(usize, usize)> {
             continue;
         }
 
-        match chars[current_position] {
-            '/' => {
-                current_position += 1;
-                if chars[current_position] == '/' {
-                    in_line_comment = true;
-                    current_position += 1;
-                    continue;
-                } else if chars[current_position] == '*' {
-                    in_block_comment = true;
-                    current_position += 1;
-                    continue;
-                }
+        match (chars[current_position], chars.get(current_position + 1)) {
+            ('/', Some('/')) => {
+                in_line_comment = true;
+                current_position += 2;
             }
-            '<' => {
+            ('/', Some('*')) => {
+                in_block_comment = true;
+                current_position += 2;
+            }
+            ('<', Some('<') | Some('=')) => {
+                current_position += 2;
+            }
+            ('<', _) => {
                 pending.push(UnclosedCandidate {
                     position: current_position,
                     depth: nesting_depth,
                 });
                 current_position += 1;
-                if chars[current_position] == '<' || chars[current_position] == '=' {
-                    pending.pop();
-                    current_position += 1;
-                    continue;
-                }
             }
-            '>' => match pending.last() {
+            ('>', next) => match pending.last() {
                 Some(unclosed) if unclosed.depth == nesting_depth => {
                     discovered_template_lists.push((
                         byte_position(unclosed.position),
@@ -79,24 +73,19 @@ pub fn find_templates(src: &str) -> Vec<(usize, usize)> {
                     ));
                     pending.pop();
                     current_position += 1;
-                    continue;
                 }
                 _ => {
                     current_position += 1;
-                    if chars[current_position] == '=' {
+                    if matches!(next, Some('=')) {
                         current_position += 1
                     }
-                    continue;
                 }
             },
-
-            '(' | '[' => {
+            ('(' | '[', _) => {
                 nesting_depth += 1;
                 current_position += 1;
-                continue;
             }
-
-            ')' | ']' => {
+            (')' | ']', _) => {
                 loop {
                     pending.pop();
                     if pending.is_empty() || pending.last().unwrap().depth < nesting_depth {
@@ -105,34 +94,21 @@ pub fn find_templates(src: &str) -> Vec<(usize, usize)> {
                 }
                 nesting_depth = nesting_depth.saturating_sub(1);
                 current_position += 1;
-                continue;
             }
-
-            '!' => {
-                current_position += 1;
-                if chars[current_position] == '=' {
-                    current_position += 1
-                }
-                continue;
+            ('!', Some('=')) => current_position += 2,
+            ('!', _) => current_position += 1,
+            ('=', Some('=')) => {
+                current_position += 2;
+                nesting_depth = 0;
+                pending.clear();
             }
-
-            '=' => {
-                current_position += 1;
-                if chars[current_position] != '=' {
-                    nesting_depth = 0;
-                    pending.clear();
-                }
-                current_position += 1;
-                continue;
-            }
-
-            ';' | '{' | ':' => {
+            ('=', _) => current_position += 1,
+            (';' | '{' | ':', _) => {
                 nesting_depth = 0;
                 pending.clear();
                 current_position += 1;
             }
-
-            '&' if chars[current_position + 1] == '&' => {
+            ('&', Some('&')) => {
                 loop {
                     pending.pop();
                     if pending.is_empty() || pending.last().unwrap().depth < nesting_depth {
@@ -141,8 +117,7 @@ pub fn find_templates(src: &str) -> Vec<(usize, usize)> {
                 }
                 current_position += 2;
             }
-
-            '|' if chars[current_position + 1] == '|' => {
+            ('|', Some('|')) => {
                 loop {
                     pending.pop();
                     if pending.is_empty() || pending.last().unwrap().depth < nesting_depth {
