@@ -17,24 +17,23 @@ pub struct TrackedDocument {
     pub uri: Url,
     pub content: String,
     pub version: i32,
-    pub compilation_result: Option<Result<Module, wgsl_ast::diagnostic::Diagnostic>>,
+    pub compilation_result: Option<Result<Module, Vec<wgsl_ast::diagnostic::Diagnostic>>>,
     pub last_valid_module: Option<Module>,
 }
 
 impl TrackedDocument {
-    pub fn compile_module(&mut self) -> &Result<Module, wgsl_ast::diagnostic::Diagnostic> {
+    pub fn compile_module(&mut self) -> &Result<Module, Vec<wgsl_ast::diagnostic::Diagnostic>> {
         let result = wgsl_ast::module::Module::from_source(&self.content);
         self.compilation_result.insert(result)
     }
 
-    pub fn get_lsp_diagnostics(&self) -> Option<lsp_types::Diagnostic> {
+    pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
         match &self.compilation_result {
-            Some(Err(diagnostic)) => Some(wgsl_error_to_lsp_diagnostic(
-                self.uri.clone(),
-                &self.content,
-                diagnostic,
-            )),
-            _ => None,
+            Some(Err(diagnostics)) => diagnostics
+                .iter()
+                .map(|d| wgsl_error_to_lsp_diagnostic(self.uri.clone(), &self.content, d))
+                .collect(),
+            _ => vec![],
         }
     }
 }

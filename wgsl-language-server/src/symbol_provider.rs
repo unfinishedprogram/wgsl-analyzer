@@ -1,8 +1,8 @@
-use std::ops::{Index, Range};
+use std::ops::Range;
 
 use lsp_types::{DocumentSymbol, SymbolKind};
 use wgsl_ast::front::{
-    ast::statement::declaration::{self, Declaration, Struct, StructMember},
+    ast::statement::declaration::{Declaration, Function, Struct, StructMember, Variable},
     span::Spanned,
 };
 
@@ -41,7 +41,7 @@ pub trait IntoDocumentSymbol {
     fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol;
 }
 
-impl IntoDocumentSymbol for declaration::Function {
+impl IntoDocumentSymbol for Function {
     #[allow(deprecated)]
     fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
         DocumentSymbol {
@@ -98,7 +98,7 @@ impl IntoDocumentSymbol for Struct {
     }
 }
 
-impl IntoDocumentSymbol for declaration::Variable {
+impl IntoDocumentSymbol for Variable {
     #[allow(deprecated)]
     fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
         DocumentSymbol {

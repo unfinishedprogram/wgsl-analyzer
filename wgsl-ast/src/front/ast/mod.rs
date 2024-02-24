@@ -1,9 +1,9 @@
 pub mod expression;
 pub mod statement;
 
-use self::statement::{statement, Statement};
+use self::statement::{declaration::Declaration, statement, Statement};
 use super::{
-    span::Spanned,
+    span::{SpanAble, Spanned},
     token::{parse::tokenizer, template::insert_template_tokens, Token},
 };
 use chumsky::prelude::*;
@@ -64,8 +64,8 @@ pub struct TokenizationResult<'a> {
 }
 
 #[derive(Debug)]
-pub struct AstResult<'a> {
-    pub ast: Vec<Spanned<Statement>>,
+pub struct Ast<'a> {
+    pub statements: Vec<Spanned<Statement>>,
     pub errors: Vec<ModuleError<'a>>,
 }
 
@@ -82,15 +82,26 @@ pub fn tokenize(source: &str) -> TokenizationResult {
     }
 }
 
-pub fn create_ast<'a>(source: &'a TokenizationResult) -> AstResult<'a> {
+pub fn create_ast<'a>(source: &'a TokenizationResult) -> Ast<'a> {
     let tokens = source.tokens.as_slice();
 
     let (ast, errors) = ast_parser()
         .parse(tokens.spanned((source.tokens.len()..source.tokens.len()).into()))
         .into_output_errors();
 
-    AstResult {
-        ast: ast.unwrap_or_default(),
+    Ast {
+        statements: ast.unwrap_or_default(),
         errors: errors.into_iter().map(ModuleError::AstParser).collect(),
+    }
+}
+
+impl<'a> Ast<'a> {
+    pub fn top_level_declarations(&self) -> impl Iterator<Item = Spanned<Declaration>> + '_ {
+        self.statements
+            .iter()
+            .filter_map(|Spanned { inner, span }| match inner {
+                Statement::Declaration(declaration) => Some(declaration.clone().with_span(*span)),
+                _ => None,
+            })
     }
 }
