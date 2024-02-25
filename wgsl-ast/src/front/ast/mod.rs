@@ -67,6 +67,7 @@ pub struct TokenizationResult<'a> {
 pub struct Ast<'a> {
     pub statements: Vec<Spanned<Statement>>,
     pub errors: Vec<ModuleError<'a>>,
+    pub tokens: Vec<(Token<'a>, SimpleSpan)>,
 }
 
 pub fn tokenize(source: &str) -> TokenizationResult<'_> {
@@ -90,6 +91,7 @@ pub fn create_ast<'a>(tokenization_result: &'a TokenizationResult) -> Ast<'a> {
         .into_output_errors();
 
     Ast {
+        tokens: tokens.to_vec(),
         statements: ast.unwrap_or_default(),
         errors: errors.into_iter().map(ModuleError::AstParser).collect(),
     }

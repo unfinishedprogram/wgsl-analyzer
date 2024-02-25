@@ -7,7 +7,7 @@ use document_tracker::DocumentTracker;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, Location, Position, PublishDiagnosticsParams,
+    DidOpenTextDocumentParams, LocationLink, Position, PublishDiagnosticsParams,
     TextDocumentIdentifier, TextDocumentPositionParams,
 };
 
@@ -15,13 +15,11 @@ use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console, js_name = error)]
-    fn console_log(s: &str);
-}
-
-fn log(s: &str) {
-    console_log(s)
+pub fn setup_logging() {
+    log::set_max_level(log::LevelFilter::Info);
+    std::panic::set_hook(std::boxed::Box::new(console_error_panic_hook::hook));
+    console_log::init().expect("could not initialize logger");
+    log::info!("Logger Initialized");
 }
 
 #[wasm_bindgen]
@@ -35,7 +33,7 @@ impl WGSLLanguageServer {
     #[wasm_bindgen(constructor)]
     pub fn new(send_diagnostics_callback: &js_sys::Function) -> Self {
         console_error_panic_hook::set_once();
-        log("WGSL Language Server Created");
+        log::info!("WGSL Language Server Created");
         Self {
             documents: DocumentTracker::default(),
             send_diagnostics_callback: send_diagnostics_callback.clone(),
@@ -44,7 +42,8 @@ impl WGSLLanguageServer {
 
     #[wasm_bindgen(js_name = onCompletion)]
     pub fn on_completion(&mut self, params: JsValue) -> String {
-        log("Request for completion");
+        log::info!("Request for completion");
+
         let TextDocumentPositionParams {
             text_document,
             position,
@@ -56,7 +55,7 @@ impl WGSLLanguageServer {
 
     #[wasm_bindgen(js_name = onDocumentSymbol)]
     pub fn on_document_symbol(&mut self, _params: JsValue) -> String {
-        log("Request for document symbol");
+        log::info!("Request for document symbol");
         let res = self.documents.get_symbols();
         serde_json::to_string(&res).unwrap()
     }
@@ -81,18 +80,18 @@ impl WGSLLanguageServer {
             }
             "textDocument/didSave" => {}
             "initialized" => {}
-            _ => log(&format!("on_notification {} {:?}", method, params)),
+            _ => log::info!("on_notification {} {:?}", method, params),
         }
     }
 
-    #[wasm_bindgen(js_name = onTypeDefinition)]
-    pub fn on_type_definition(&mut self, params: JsValue) -> String {
+    #[wasm_bindgen(js_name = onDefinition)]
+    pub fn on_definition(&mut self, params: JsValue) -> String {
         let TextDocumentPositionParams {
             text_document,
             position,
         } = from_value(params).unwrap();
 
-        let res = self.get_type_definition(text_document, position);
+        let res = self.get_definition(text_document, position);
         serde_json::to_string(&res).unwrap()
     }
 }
@@ -100,7 +99,7 @@ impl WGSLLanguageServer {
 impl WGSLLanguageServer {
     fn update_diagnostics(&mut self) {
         let diagnostics = self.get_diagnostics();
-        log(&format!("{diagnostics:?}"));
+        log::info!("{diagnostics:?}");
         self.send_diagnostics(diagnostics)
     }
 
@@ -109,10 +108,11 @@ impl WGSLLanguageServer {
         for params in diagnostics {
             let params = &to_value(&params).unwrap();
             if let Err(e) = self.send_diagnostics_callback.call1(this, params) {
-                log(&format!(
+                log::info!(
                     "send_diagnostics params:\n\t{:?}\n\tJS error: {:?}",
-                    params, e
-                ));
+                    params,
+                    e
+                );
             }
         }
     }
@@ -129,12 +129,11 @@ impl WGSLLanguageServer {
         self.documents.get_diagnostics()
     }
 
-    fn get_type_definition(
+    fn get_definition(
         &self,
         text_document: TextDocumentIdentifier,
         position: Position,
-    ) -> Option<Location> {
-        self.documents
-            .get_type_definition(&text_document.uri, &position)
+    ) -> Option<LocationLink> {
+        self.documents.get_definition(&text_document.uri, &position)
     }
 }

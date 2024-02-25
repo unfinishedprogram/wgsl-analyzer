@@ -1,4 +1,4 @@
-use lsp_types::{Location, Position};
+use lsp_types::{Location, LocationLink, Position};
 
 pub trait RangeTools {
     fn contains_line(&self, position: &Position) -> bool;
@@ -26,7 +26,8 @@ pub fn string_offset(string: &str, position: &Position) -> usize {
         if index == position.line as usize {
             return res + position.character as usize;
         }
-        res += line.len();
+        // newline chars should be included
+        res += line.len() + 1;
     }
 
     0
@@ -61,5 +62,30 @@ pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types:
     Location {
         uri,
         range: lsp_types::Range { start, end },
+    }
+}
+
+pub fn new_location_link(
+    selection_range: std::ops::Range<usize>,
+    range: std::ops::Range<usize>,
+    source: &str,
+    uri: lsp_types::Url,
+) -> LocationLink {
+    let std::ops::Range { start, end } = range;
+
+    let start = position_at_char_offset(source, start);
+    let end = position_at_char_offset(source, end);
+
+    let sel_start = position_at_char_offset(source, selection_range.start);
+    let sel_end = position_at_char_offset(source, selection_range.end);
+
+    LocationLink {
+        target_uri: uri,
+        target_range: lsp_types::Range { start, end },
+        target_selection_range: lsp_types::Range { start, end },
+        origin_selection_range: Some(lsp_types::Range {
+            start: sel_start,
+            end: sel_end,
+        }),
     }
 }

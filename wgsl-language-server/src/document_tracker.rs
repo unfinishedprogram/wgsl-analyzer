@@ -4,14 +4,11 @@ use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Location, Position,
     PublishDiagnosticsParams, TextDocumentItem, Url,
 };
-use wgsl_ast::{
-    front::{span::SpanAble, token::Token},
-    module::Module,
-};
+use wgsl_ast::module::Module;
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
-    range_tools::{new_location, string_offset, string_range},
+    range_tools::{new_location, new_location_link, string_offset, string_range},
     // completion_provider::CompletionProvider,
     symbol_provider::SymbolProvider,
 };
@@ -27,7 +24,7 @@ pub struct TrackedDocument {
 impl TrackedDocument {
     pub fn compile_module(&mut self) {
         let result = wgsl_ast::module::Module::from_source(&self.content);
-        self.compilation_result.insert(result);
+        _ = self.compilation_result.insert(result);
     }
 
     pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
@@ -98,25 +95,35 @@ impl DocumentTracker {
         vec![]
     }
 
-    pub fn get_type_definition(&self, url: &Url, position: &Position) -> Option<Location> {
+    pub fn get_definition(
+        &self,
+        url: &Url,
+        position: &Position,
+    ) -> Option<lsp_types::LocationLink> {
         if let Some(Ok(module)) = &self.documents[url].compilation_result {
             module
-                .token_at_position(string_offset(&module.source, position))
-                .map(|t| match t {
-                    Token::Ident(s) => Some(s),
-                    _ => None,
-                })
-                .flatten()
-                .map(|s| {
+                .ident_at_position(&string_offset(&module.source, position))
+                .and_then(|s| {
                     module
                         .type_store
-                        .handle_of_ident(s.to_owned().with_span((0..0).into()))
+                        .handle_of_ident(s)
                         .ok()
+                        .map(|handle| (s.span, handle))
                 })
-                .flatten()
-                .map(|handle| module.type_store.span_of(&handle))
-                .flatten()
-                .map(|span| new_location(span.into_range(), &module.source, url.clone()))
+                .and_then(|(source_span, handle)| {
+                    module
+                        .type_store
+                        .span_of(&handle)
+                        .map(|dest_span| (source_span, dest_span))
+                })
+                .map(|(source_span, dest_span)| {
+                    new_location_link(
+                        source_span.into_range(),
+                        dest_span.into_range(),
+                        &module.source,
+                        url.clone(),
+                    )
+                })
         } else {
             None
         }

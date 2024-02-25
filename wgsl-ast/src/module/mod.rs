@@ -7,6 +7,7 @@ use crate::{
             tokenize, Ast,
         },
         span::{SpanAble, Spanned},
+        token::Token,
     },
 };
 
@@ -32,6 +33,7 @@ pub struct Module {
     pub scopes: Scopes,
     pub module_scope: Handle<Scope>,
     pub type_store: TypeStore,
+    pub identifiers: Vec<Spanned<String>>,
 }
 
 // Validation must be done in multiple passes:
@@ -46,12 +48,22 @@ impl Module {
             let mut type_store = type_store::TypeStore::new();
             type_store.insert_declarations(declarations)?;
 
+            let identifiers = ast
+                .tokens
+                .iter()
+                .filter_map(|(token, span)| match *token {
+                    Token::Ident(s) => Some(s.to_owned().with_span(*span)),
+                    _ => None,
+                })
+                .collect();
+
             Ok(Self {
                 source,
                 ast: ast.statements,
                 scopes,
                 type_store,
                 module_scope,
+                identifiers,
             })
         } else {
             let errors = ast.errors.iter().map(Diagnostic::from).collect();
@@ -74,5 +86,16 @@ impl Module {
                 _ => None,
             })
             .collect()
+    }
+
+    pub fn ident_at_position(&self, offset: &usize) -> Option<&Spanned<String>> {
+        let res = self
+            .identifiers
+            .iter()
+            .find(|Spanned { span, .. }| span.into_range().contains(offset));
+
+        log::info!("{offset} : {res:?}");
+
+        res
     }
 }
