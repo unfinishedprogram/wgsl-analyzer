@@ -13,13 +13,13 @@ console.log("STARTING: wgsl-language-server");
 
 const sendDiagnosticsCallback = (params: PublishDiagnosticsParams) =>
     connection.sendDiagnostics(params);
+
 const wgsl_ls = new WGSLLanguageServer(sendDiagnosticsCallback);
 
 connection.onNotification((...args) => wgsl_ls.onNotification(...args));
-
 connection.onCompletion((...args) => JSON.parse(wgsl_ls.onCompletion(args[0])));
-
-connection.onDocumentSymbol((arg) => JSON.parse(wgsl_ls.onDocumentSymbol(arg)))
+connection.onDocumentSymbol((arg) => JSON.parse(wgsl_ls.onDocumentSymbol(arg)));
+connection.onTypeDefinition((arg) => JSON.parse(wgsl_ls.onTypeDefinition(arg)));
 
 connection.onInitialize(() => {
     return {
@@ -31,6 +31,7 @@ connection.onInitialize(() => {
             },
             completionProvider: {},
             documentSymbolProvider: true,
+            typeDefinitionProvider: true,
             workspace: {
                 workspaceFolders: { supported: true },
                 fileOperations: {

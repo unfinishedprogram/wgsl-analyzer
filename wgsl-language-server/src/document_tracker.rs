@@ -1,14 +1,17 @@
 use std::collections::HashMap;
 
 use lsp_types::{
-    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
+    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Location, Position,
     PublishDiagnosticsParams, TextDocumentItem, Url,
 };
-use wgsl_ast::module::Module;
+use wgsl_ast::{
+    front::{span::SpanAble, token::Token},
+    module::Module,
+};
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
-    range_tools::string_range,
+    range_tools::{new_location, string_offset, string_range},
     // completion_provider::CompletionProvider,
     symbol_provider::SymbolProvider,
 };
@@ -22,9 +25,9 @@ pub struct TrackedDocument {
 }
 
 impl TrackedDocument {
-    pub fn compile_module(&mut self) -> &Result<Module, Vec<wgsl_ast::diagnostic::Diagnostic>> {
+    pub fn compile_module(&mut self) {
         let result = wgsl_ast::module::Module::from_source(&self.content);
-        self.compilation_result.insert(result)
+        self.compilation_result.insert(result);
     }
 
     pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
@@ -45,7 +48,7 @@ pub struct DocumentTracker {
 
 impl DocumentTracker {
     pub fn insert(&mut self, doc: TextDocumentItem) {
-        let mut document = TrackedDocument {
+        let document = TrackedDocument {
             uri: doc.uri.to_owned(),
             content: doc.text.clone(),
             version: doc.version,
@@ -53,16 +56,15 @@ impl DocumentTracker {
             last_valid_module: None,
         };
 
-        document.compile_module();
-
-        self.documents.insert(doc.uri, document);
+        self.documents.insert(doc.uri.clone(), document);
+        self.documents.get_mut(&doc.uri).unwrap().compile_module();
     }
 
     pub fn update(&mut self, change: DidChangeTextDocumentParams) {
         if let Some(doc) = self.documents.get_mut(&change.text_document.uri) {
             for change in change.content_changes {
                 if let Some(range) = change.range {
-                    let range = string_range(&doc.content, range);
+                    let range = string_range(&doc.content, &range);
                     doc.content.replace_range(range, &change.text);
                 } else {
                     doc.content = change.text;
@@ -94,6 +96,30 @@ impl DocumentTracker {
 
     pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
         vec![]
+    }
+
+    pub fn get_type_definition(&self, url: &Url, position: &Position) -> Option<Location> {
+        if let Some(Ok(module)) = &self.documents[url].compilation_result {
+            module
+                .token_at_position(string_offset(&module.source, position))
+                .map(|t| match t {
+                    Token::Ident(s) => Some(s),
+                    _ => None,
+                })
+                .flatten()
+                .map(|s| {
+                    module
+                        .type_store
+                        .handle_of_ident(s.to_owned().with_span((0..0).into()))
+                        .ok()
+                })
+                .flatten()
+                .map(|handle| module.type_store.span_of(&handle))
+                .flatten()
+                .map(|span| new_location(span.into_range(), &module.source, url.clone()))
+        } else {
+            None
+        }
     }
 
     pub fn get_symbols(&self) -> Vec<DocumentSymbol> {

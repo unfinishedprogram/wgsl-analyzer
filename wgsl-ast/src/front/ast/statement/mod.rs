@@ -126,7 +126,10 @@ pub enum AssignmentOperator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OptionallyTypedIdent(pub String, pub Option<Spanned<TemplateElaboratedIdent>>);
+pub struct OptionallyTypedIdent(
+    pub Spanned<String>,
+    pub Option<Spanned<TemplateElaboratedIdent>>,
+);
 
 fn assignment_operator<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, AssignmentOperator, RichErr<'src, 'tokens>> + Clone
@@ -396,6 +399,7 @@ fn optionally_typed_ident<'tokens, 'src: 'tokens>(
     let type_specifier = template_elaborated_ident(expr);
 
     select!(Token::Ident(ident) => ident.to_owned())
+        .map_with(map_span)
         .then(
             just(Token::SyntaxToken(":"))
                 .ignore_then(type_specifier)

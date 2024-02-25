@@ -7,8 +7,8 @@ use document_tracker::DocumentTracker;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, TextDocumentIdentifier,
-    TextDocumentPositionParams,
+    DidOpenTextDocumentParams, Location, Position, PublishDiagnosticsParams,
+    TextDocumentIdentifier, TextDocumentPositionParams,
 };
 
 use serde_wasm_bindgen::{from_value, to_value};
@@ -84,6 +84,17 @@ impl WGSLLanguageServer {
             _ => log(&format!("on_notification {} {:?}", method, params)),
         }
     }
+
+    #[wasm_bindgen(js_name = onTypeDefinition)]
+    pub fn on_type_definition(&mut self, params: JsValue) -> String {
+        let TextDocumentPositionParams {
+            text_document,
+            position,
+        } = from_value(params).unwrap();
+
+        let res = self.get_type_definition(text_document, position);
+        serde_json::to_string(&res).unwrap()
+    }
 }
 
 impl WGSLLanguageServer {
@@ -116,5 +127,14 @@ impl WGSLLanguageServer {
 
     fn get_diagnostics(&self) -> Vec<PublishDiagnosticsParams> {
         self.documents.get_diagnostics()
+    }
+
+    fn get_type_definition(
+        &self,
+        text_document: TextDocumentIdentifier,
+        position: Position,
+    ) -> Option<Location> {
+        self.documents
+            .get_type_definition(&text_document.uri, &position)
     }
 }

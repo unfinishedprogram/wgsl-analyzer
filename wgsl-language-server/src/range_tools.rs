@@ -15,11 +15,11 @@ impl RangeTools for lsp_types::Range {
     }
 }
 
-pub fn string_range(string: &str, range: lsp_types::Range) -> std::ops::Range<usize> {
-    string_offset(string, range.start)..string_offset(string, range.end)
+pub fn string_range(string: &str, range: &lsp_types::Range) -> std::ops::Range<usize> {
+    string_offset(string, &range.start)..string_offset(string, &range.end)
 }
 
-pub fn string_offset(string: &str, position: Position) -> usize {
+pub fn string_offset(string: &str, position: &Position) -> usize {
     let mut res = 0;
 
     for (index, line) in string.lines().enumerate() {

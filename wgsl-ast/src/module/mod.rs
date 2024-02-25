@@ -12,7 +12,7 @@ use crate::{
 
 use self::{
     scope::{Scope, Scopes},
-    store::{handle::Handle, Store},
+    store::handle::Handle,
     type_store::TypeStore,
 };
 
@@ -32,15 +32,6 @@ pub struct Module {
     pub scopes: Scopes,
     pub module_scope: Handle<Scope>,
     pub type_store: TypeStore,
-    // directives: Vec<Directive>, TODO
-    // functions: Vec<Function>,
-    // types: Vec<Type>,
-    // variables: Vec<Variable>,
-    // constants: Vec<Constant>,
-    // statements: Vec<Statement>,
-    // attributes: Vec<Attribute>,
-    // entry_points: Vec<EntryPoint>,
-    // diagnostics: Vec<Diagnostic>,
 }
 
 // Validation must be done in multiple passes:

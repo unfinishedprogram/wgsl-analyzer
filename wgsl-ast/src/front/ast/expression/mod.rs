@@ -28,7 +28,7 @@ pub struct ComponentOrSwizzleSpecifier(
 );
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateElaboratedIdent(pub String, pub Option<TemplateList>);
+pub struct TemplateElaboratedIdent(pub Spanned<String>, pub Option<TemplateList>);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateList(pub Vec<Expression>);
 
@@ -339,7 +339,7 @@ pub fn template_elaborated_ident<'tokens, 'src: 'tokens>(
     Spanned<TemplateElaboratedIdent>,
     RichErr<'src, 'tokens>,
 > + Clone {
-    let ident = select!(Token::Ident(ident) => ident.to_owned());
+    let ident = select!(Token::Ident(ident) => ident.to_owned()).map_with(map_span);
     let template_list = template_list(expression);
 
     ident

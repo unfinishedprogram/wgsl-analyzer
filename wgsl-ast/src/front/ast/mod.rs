@@ -69,7 +69,7 @@ pub struct Ast<'a> {
     pub errors: Vec<ModuleError<'a>>,
 }
 
-pub fn tokenize(source: &str) -> TokenizationResult {
+pub fn tokenize(source: &str) -> TokenizationResult<'_> {
     let (mut tokens, errors) = tokenizer().parse(source).into_output_errors();
 
     if let Some(tokens) = &mut tokens {
@@ -82,11 +82,11 @@ pub fn tokenize(source: &str) -> TokenizationResult {
     }
 }
 
-pub fn create_ast<'a>(source: &'a TokenizationResult) -> Ast<'a> {
-    let tokens = source.tokens.as_slice();
+pub fn create_ast<'a>(tokenization_result: &'a TokenizationResult) -> Ast<'a> {
+    let tokens = tokenization_result.tokens.as_slice();
 
     let (ast, errors) = ast_parser()
-        .parse(tokens.spanned((source.tokens.len()..source.tokens.len()).into()))
+        .parse(tokens.spanned((tokens.len()..tokens.len()).into()))
         .into_output_errors();
 
     Ast {

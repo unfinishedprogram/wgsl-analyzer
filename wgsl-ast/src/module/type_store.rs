@@ -141,7 +141,7 @@ impl TypeStore {
                 }
             }
 
-            match self.handle_of_ident(ty.0.clone().with_span(ty.span())) {
+            match self.handle_of_ident(&ty.0) {
                 Ok(ty) => members.push(StructMember {
                     ast: member.clone(),
                     ident: member.ident.as_inner().clone(),
@@ -164,19 +164,19 @@ impl TypeStore {
     }
 
     pub fn contains_ident(&self, ident: TemplateElaboratedIdent) -> bool {
-        self.identifiers.contains_key(&ident.0)
+        self.identifiers.contains_key(&ident.0.inner())
     }
 
     pub fn span_of(&self, ty: &Handle<Type>) -> Option<SimpleSpan> {
         self.types.get(ty).definition_span()
     }
 
-    pub fn handle_of_ident(&self, ident: Spanned<String>) -> Result<Handle<Type>, Diagnostic> {
+    pub fn handle_of_ident(&self, ident: &Spanned<String>) -> Result<Handle<Type>, Diagnostic> {
         self.identifiers
             .get(&ident.inner)
             .cloned()
             .ok_or(Diagnostic::error(
-                format!("Identifier: '{}' is not defined", ident.as_inner()),
+                format!("Type: '{}' is not defined", ident.as_inner()),
                 ident.span(),
             ))
     }
@@ -185,7 +185,7 @@ impl TypeStore {
         &self,
         ident: &Spanned<TemplateElaboratedIdent>,
     ) -> Result<Type, Diagnostic> {
-        self.handle_of_ident(ident.0.clone().with_span(ident.span()))
+        self.handle_of_ident(&ident.0)
             .map(|handle| self.types.get(&handle).to_owned())
     }
 }

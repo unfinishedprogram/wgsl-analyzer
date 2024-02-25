@@ -3,7 +3,7 @@ use std::ops::Range;
 use lsp_types::{DocumentSymbol, SymbolKind};
 use wgsl_ast::front::{
     ast::statement::declaration::{Declaration, Function, Struct, StructMember, Variable},
-    span::Spanned,
+    span::{Spanned, WithSpan},
 };
 
 use crate::{document_tracker::TrackedDocument, range_tools::lsp_range_from_char_span};
@@ -102,7 +102,7 @@ impl IntoDocumentSymbol for Variable {
     #[allow(deprecated)]
     fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
         DocumentSymbol {
-            name: self.ident.inner.0.clone(),
+            name: self.ident.0.as_inner().clone(),
             kind: SymbolKind::Variable,
             detail: self.ident.1.as_ref().map(|ty| source[ty].to_owned()),
             range: lsp_range_from_char_span(source, span),
