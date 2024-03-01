@@ -64,3 +64,10 @@ impl Diagnostic {
             .finish()
     }
 }
+
+// This lets us use the `?` syntax, with functions that only have a single point of failure more conveniently
+impl From<Diagnostic> for Vec<Diagnostic> {
+    fn from(diag: Diagnostic) -> Self {
+        vec![diag]
+    }
+}
