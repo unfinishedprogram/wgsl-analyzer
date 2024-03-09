@@ -82,6 +82,19 @@ impl TypeStore {
         self.add("mat4x3h", mat_type!(Mat4, Vec3, F16));
         self.add("mat4x4h", mat_type!(Mat4, Vec4, F16));
 
+        self.add("vec2i", Type::Plain(Plain::Vec(VecType::Vec2(Scalar::I32))));
+        self.add("vec3i", Type::Plain(Plain::Vec(VecType::Vec3(Scalar::I32))));
+        self.add("vec4i", Type::Plain(Plain::Vec(VecType::Vec4(Scalar::I32))));
+        self.add("vec2u", Type::Plain(Plain::Vec(VecType::Vec2(Scalar::U32))));
+        self.add("vec3u", Type::Plain(Plain::Vec(VecType::Vec3(Scalar::U32))));
+        self.add("vec4u", Type::Plain(Plain::Vec(VecType::Vec4(Scalar::U32))));
+        self.add("vec2f", Type::Plain(Plain::Vec(VecType::Vec2(Scalar::F32))));
+        self.add("vec3f", Type::Plain(Plain::Vec(VecType::Vec3(Scalar::F32))));
+        self.add("vec4f", Type::Plain(Plain::Vec(VecType::Vec4(Scalar::F32))));
+        self.add("vec2h", Type::Plain(Plain::Vec(VecType::Vec2(Scalar::F16))));
+        self.add("vec3h", Type::Plain(Plain::Vec(VecType::Vec3(Scalar::F16))));
+        self.add("vec4h", Type::Plain(Plain::Vec(VecType::Vec4(Scalar::F16))));
+
         for generator in TypeGenerator::all_predeclared() {
             self.add(generator.0, T::Generator(generator.1));
         }
