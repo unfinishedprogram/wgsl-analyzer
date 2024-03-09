@@ -7,7 +7,7 @@ use crate::{
     module::{store::Store, type_store::TypeStore},
 };
 
-use super::{Plain, Scalar, Type};
+use super::{Mat, Plain, Scalar, Type, VecType};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeGenerator {
@@ -158,15 +158,45 @@ impl TypeGenerator {
                     .span(args[0].span())]),
                 }
             }
-            TypeGenerator::Mat2x2 => todo!(),
-            TypeGenerator::Mat2x3 => todo!(),
-            TypeGenerator::Mat2x4 => todo!(),
-            TypeGenerator::Mat3x2 => todo!(),
-            TypeGenerator::Mat3x3 => todo!(),
-            TypeGenerator::Mat3x4 => todo!(),
-            TypeGenerator::Mat4x2 => todo!(),
-            TypeGenerator::Mat4x3 => todo!(),
-            TypeGenerator::Mat4x4 => todo!(),
+            TypeGenerator::Mat2x2
+            | TypeGenerator::Mat2x3
+            | TypeGenerator::Mat2x4
+            | TypeGenerator::Mat3x2
+            | TypeGenerator::Mat3x3
+            | TypeGenerator::Mat3x4
+            | TypeGenerator::Mat4x2
+            | TypeGenerator::Mat4x3
+            | TypeGenerator::Mat4x4 => {
+                let content_type = store.type_of_ident(&args[0])?;
+                let content_type = store.types.get(&content_type);
+
+                let scalar_type = match content_type {
+                    Type::Plain(Plain::Scalar(scalar))
+                        if matches!(scalar, Scalar::F32 | Scalar::F16) =>
+                    {
+                        Ok(scalar.clone())
+                    }
+                    _ => Err(vec![Diagnostic::error(
+                        "Invalid matrix type provided. Matrix types can only be f32, f16",
+                    )
+                    .span(args[0].span())]),
+                }?;
+
+                let res = match self {
+                    TypeGenerator::Mat2x2 => Plain::Mat(Mat::Mat2(VecType::Vec2(scalar_type))),
+                    TypeGenerator::Mat2x3 => Plain::Mat(Mat::Mat2(VecType::Vec3(scalar_type))),
+                    TypeGenerator::Mat2x4 => Plain::Mat(Mat::Mat2(VecType::Vec4(scalar_type))),
+                    TypeGenerator::Mat3x2 => Plain::Mat(Mat::Mat3(VecType::Vec2(scalar_type))),
+                    TypeGenerator::Mat3x3 => Plain::Mat(Mat::Mat3(VecType::Vec3(scalar_type))),
+                    TypeGenerator::Mat3x4 => Plain::Mat(Mat::Mat3(VecType::Vec4(scalar_type))),
+                    TypeGenerator::Mat4x2 => Plain::Mat(Mat::Mat4(VecType::Vec2(scalar_type))),
+                    TypeGenerator::Mat4x3 => Plain::Mat(Mat::Mat4(VecType::Vec3(scalar_type))),
+                    TypeGenerator::Mat4x4 => Plain::Mat(Mat::Mat4(VecType::Vec4(scalar_type))),
+                    _ => unreachable!(),
+                };
+
+                Ok(Type::Plain(res))
+            }
             TypeGenerator::Ptr => todo!(),
             TypeGenerator::Texture1D => todo!(),
             TypeGenerator::Texture2D => todo!(),
@@ -183,7 +213,5 @@ impl TypeGenerator {
             TypeGenerator::Vec3 => todo!(),
             TypeGenerator::Vec4 => todo!(),
         }
-
-        // todo!();
     }
 }
