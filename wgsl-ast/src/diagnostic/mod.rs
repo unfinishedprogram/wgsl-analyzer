@@ -40,8 +40,15 @@ impl Diagnostic {
         }
     }
 
+    pub fn span_if_none(mut self, span: SimpleSpan) -> Self {
+        if self.span.is_none() {
+            self.span = Some(span);
+        }
+        self
+    }
+
     pub fn span(mut self, span: SimpleSpan) -> Self {
-        _ = self.span.insert(span);
+        self.span = Some(span);
         self
     }
 

@@ -22,6 +22,7 @@ pub enum Plain {
     Struct(Struct),
     Mat(Mat),
     Vec(VecType),
+    Atomic(Scalar),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

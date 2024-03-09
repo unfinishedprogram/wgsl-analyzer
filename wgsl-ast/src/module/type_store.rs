@@ -291,7 +291,7 @@ impl TypeStore {
                 let applied =
                     gen.apply_template_args(self, as_identifiers)
                         .map_err(|mut err| {
-                            err[0] = err[0].clone().span(ident.span());
+                            err[0] = err[0].clone().span_if_none(ident.span());
                             err
                         })?;
                 Ok(applied)

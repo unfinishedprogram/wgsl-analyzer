@@ -1,15 +1,13 @@
-use chumsky::span::{SimpleSpan, Span};
-
 use crate::{
     diagnostic::Diagnostic,
     front::{
         ast::expression::TemplateElaboratedIdent,
         span::{Spanned, WithSpan},
     },
-    module::type_store::TypeStore,
+    module::{store::Store, type_store::TypeStore},
 };
 
-use super::Type;
+use super::{Plain, Scalar, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeGenerator {
@@ -138,13 +136,28 @@ impl TypeGenerator {
         match self {
             TypeGenerator::Array => {
                 // TODO: Implement fixed size arrays
-
                 let content_type = store.type_of_ident(&args[0])?;
                 Ok(Type::Plain(
                     crate::module::declaration::r#type::Plain::Array(content_type, None),
                 ))
             }
-            TypeGenerator::Atomic => todo!(),
+            TypeGenerator::Atomic => {
+                let content_type = store.type_of_ident(&args[0])?;
+                let content_type = store.types.get(&content_type);
+                match content_type {
+                    Type::Plain(Plain::Scalar(scalar))
+                        if matches!(scalar, Scalar::I32 | Scalar::U32) =>
+                    {
+                        Ok(Type::Plain(
+                            crate::module::declaration::r#type::Plain::Atomic(scalar.clone()),
+                        ))
+                    }
+                    _ => Err(vec![Diagnostic::error(
+                        "Invalid atomic type provided. Atomic types can only be u32 or i32",
+                    )
+                    .span(args[0].span())]),
+                }
+            }
             TypeGenerator::Mat2x2 => todo!(),
             TypeGenerator::Mat2x3 => todo!(),
             TypeGenerator::Mat2x4 => todo!(),
