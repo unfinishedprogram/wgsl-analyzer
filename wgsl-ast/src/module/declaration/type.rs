@@ -1,26 +1,27 @@
-use chumsky::span::{SimpleSpan, Span};
+use chumsky::span::SimpleSpan;
+pub mod generator;
 
 use crate::{front::span::Spanned, module::store::handle::Handle};
 
+use self::generator::TypeGenerator;
+
 // Always pre-declared
 // This cannot be created via user code
-pub struct TypeGenerator {
-    pub types: Vec<Type>,
-}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Type {
     Alias(Alias),
     Plain(Plain),
+    Generator(TypeGenerator),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Plain {
     Scalar(Scalar),
-    Vec(VecType),
-    Mat(Mat),
     Array(Handle<Type>, Option<u32>),
     Struct(Struct),
+    Mat(Mat),
+    Vec(VecType),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -44,6 +45,9 @@ pub struct StructMember {
     pub ident: String,
     pub ty: Handle<Type>,
 }
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Templated {}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum VecType {

@@ -5,7 +5,8 @@ pub fn wgsl_error_to_lsp_diagnostic(
     source: &str,
     diagnostic: &wgsl_ast::diagnostic::Diagnostic,
 ) -> lsp_types::Diagnostic {
-    let range = lsp_range_from_char_span(source, diagnostic.span.into());
+    let span = diagnostic.span.map(|span| span.into()).unwrap_or(0..0);
+    let range = lsp_range_from_char_span(source, span);
     let message = diagnostic.message.clone();
 
     let related_information: Vec<lsp_types::DiagnosticRelatedInformation> = diagnostic

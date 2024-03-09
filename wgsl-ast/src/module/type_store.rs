@@ -5,19 +5,32 @@ use chumsky::span::SimpleSpan;
 use crate::{
     diagnostic::Diagnostic,
     front::{
-        ast::{expression::TemplateElaboratedIdent, statement::declaration::Declaration},
+        ast::{
+            expression::{ExpressionInner, TemplateElaboratedIdent, TemplateList},
+            statement::declaration::Declaration,
+        },
         span::{SpanAble, Spanned, WithSpan},
     },
+    module::declaration::r#type::generator::TypeGenerator,
 };
 
 use super::{
-    declaration::r#type::{Alias, Plain, Scalar, Struct, StructMember, Type},
+    declaration::r#type::{Alias, Mat, Plain, Scalar, Struct, StructMember, Type, VecType},
     store::{handle::Handle, Arena, Store},
 };
 
 pub struct TypeStore {
     pub types: Arena<Type>,
     pub identifiers: HashMap<String, Handle<Type>>,
+}
+
+// For defining a matrix type with less much boilerplate / repetition
+macro_rules! mat_type {
+    ($mat_ty:ident, $vec_ty:ident, $scalar_ty:ident) => {
+        Type::Plain(Plain::Mat(Mat::$mat_ty(VecType::$vec_ty(
+            Scalar::$scalar_ty,
+        ))))
+    };
 }
 
 impl TypeStore {
@@ -31,17 +44,47 @@ impl TypeStore {
         res
     }
 
-    pub fn add_with_alias(&mut self, ident: impl Into<String>, ty: Type) {
+    pub fn add(&mut self, ident: impl Into<String>, ty: Type) {
         let handle = self.types.insert(ty);
         self.identifiers.insert(ident.into(), handle);
     }
 
     pub fn init(&mut self) {
-        self.add_with_alias("bool", Type::Plain(Plain::Scalar(Scalar::Boolean)));
-        self.add_with_alias("i32", Type::Plain(Plain::Scalar(Scalar::I32)));
-        self.add_with_alias("u32", Type::Plain(Plain::Scalar(Scalar::U32)));
-        self.add_with_alias("f32", Type::Plain(Plain::Scalar(Scalar::F32)));
-        self.add_with_alias("f16", Type::Plain(Plain::Scalar(Scalar::F16)));
+        use Plain as P;
+        use Scalar as S;
+        use Type as T;
+
+        // let mat = ||
+
+        self.add("bool", T::Plain(P::Scalar(S::Boolean)));
+        self.add("i32", T::Plain(P::Scalar(S::I32)));
+        self.add("u32", T::Plain(P::Scalar(S::U32)));
+        self.add("f32", T::Plain(P::Scalar(S::F32)));
+        self.add("f16", T::Plain(P::Scalar(S::F16)));
+
+        self.add("mat2x2f", mat_type!(Mat2, Vec2, F32));
+        self.add("mat2x3f", mat_type!(Mat2, Vec3, F32));
+        self.add("mat2x4f", mat_type!(Mat2, Vec4, F32));
+        self.add("mat3x2f", mat_type!(Mat3, Vec2, F32));
+        self.add("mat3x3f", mat_type!(Mat3, Vec3, F32));
+        self.add("mat3x4f", mat_type!(Mat3, Vec4, F32));
+        self.add("mat4x2f", mat_type!(Mat4, Vec2, F32));
+        self.add("mat4x3f", mat_type!(Mat4, Vec3, F32));
+        self.add("mat4x4f", mat_type!(Mat4, Vec4, F32));
+
+        self.add("mat2x2h", mat_type!(Mat2, Vec2, F16));
+        self.add("mat2x3h", mat_type!(Mat2, Vec3, F16));
+        self.add("mat2x4h", mat_type!(Mat2, Vec4, F16));
+        self.add("mat3x2h", mat_type!(Mat3, Vec2, F16));
+        self.add("mat3x3h", mat_type!(Mat3, Vec3, F16));
+        self.add("mat3x4h", mat_type!(Mat3, Vec4, F16));
+        self.add("mat4x2h", mat_type!(Mat4, Vec2, F16));
+        self.add("mat4x3h", mat_type!(Mat4, Vec3, F16));
+        self.add("mat4x4h", mat_type!(Mat4, Vec4, F16));
+
+        for generator in TypeGenerator::all_predeclared() {
+            self.add(generator.0, T::Generator(generator.1));
+        }
     }
 
     pub fn insert_declarations(
@@ -58,7 +101,7 @@ impl TypeStore {
                     if let Some(diag) = self.validate_no_conflicting_definitions(ty.ident.clone()) {
                         diagnostics.push(diag);
                     } else {
-                        self.add_with_alias(
+                        self.add(
                             &ty.ident.inner,
                             Type::Alias(Alias {
                                 ast: ty.clone().with_span(decl.span),
@@ -70,7 +113,7 @@ impl TypeStore {
                     }
                 }
                 Declaration::Struct(s) => match self.struct_from_ast(s.with_span(decl.span)) {
-                    Ok(s) => self.add_with_alias(s.ident.clone(), Type::Plain(Plain::Struct(s))),
+                    Ok(s) => self.add(s.ident.clone(), Type::Plain(Plain::Struct(s))),
                     Err(mut e) => diagnostics.append(&mut e),
                 },
                 // Other declarations do not produce types
@@ -89,22 +132,24 @@ impl TypeStore {
         &self,
         ident: Spanned<String>,
     ) -> Option<Diagnostic> {
-        match self.identifiers.get(&ident.inner) {
+        match self.identifiers.get(ident.as_inner()) {
             Some(handle) => match self.span_of(handle) {
                 Some(span) => {
-                    let diag = Diagnostic::error(
-                        format!("Type '{}' is already defined", ident.inner),
-                        span,
-                    )
+                    let diag = Diagnostic::error(format!(
+                        "Type '{}' is already defined",
+                        ident.as_inner()
+                    ))
+                    .span(span)
                     .related("Conflicting declaration here", span);
                     Some(diag)
                 }
                 None => {
                     // Must be a builtin type
-                    let diag = Diagnostic::error(
-                        format!("Type '{}' is already defined as a builtin", ident.inner),
-                        ident.span,
-                    );
+                    let diag = Diagnostic::error(format!(
+                        "Type '{}' is already defined as a builtin",
+                        ident.as_inner()
+                    ))
+                    .span(ident.span());
 
                     Some(diag)
                 }
@@ -114,13 +159,13 @@ impl TypeStore {
     }
 
     pub fn struct_from_ast(
-        &self,
+        &mut self,
         struct_ast: Spanned<crate::front::ast::statement::declaration::Struct>,
     ) -> Result<Struct, Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let mut members: Vec<StructMember> = vec![];
 
-        for member in struct_ast.inner.members.iter() {
+        for member in struct_ast.as_inner().members.iter() {
             let ty = &member.value;
             let ident = &member.ident;
 
@@ -128,26 +173,24 @@ impl TypeStore {
             for defined in &members {
                 if &defined.ident == ident.as_inner() {
                     diagnostics.push(
-                        Diagnostic::error(
-                            format!(
-                                "Member '{}' already exists on struct '{}'",
-                                ident.as_inner(),
-                                struct_ast.ident.as_inner()
-                            ),
-                            member.span(),
-                        )
+                        Diagnostic::error(format!(
+                            "Member '{}' already exists on struct '{}'",
+                            ident.as_inner(),
+                            struct_ast.ident.as_inner()
+                        ))
+                        .span(member.span())
                         .related("Other member defined here", defined.ast.span),
                     )
                 }
             }
 
-            match self.handle_of_ident(&ty.0) {
+            match self.type_of_ident(ty) {
                 Ok(ty) => members.push(StructMember {
                     ast: member.clone(),
                     ident: member.ident.as_inner().clone(),
                     ty,
                 }),
-                Err(diag) => diagnostics.push(diag),
+                Err(diag) => diagnostics.extend(diag),
             }
         }
 
@@ -172,20 +215,95 @@ impl TypeStore {
     }
 
     pub fn handle_of_ident(&self, ident: &Spanned<String>) -> Result<Handle<Type>, Diagnostic> {
-        self.identifiers
-            .get(&ident.inner)
-            .cloned()
-            .ok_or(Diagnostic::error(
-                format!("Type: '{}' is not defined", ident.as_inner()),
-                ident.span(),
-            ))
+        self.identifiers.get(&ident.inner).cloned().ok_or(
+            Diagnostic::error(format!("Type: '{}' is not defined", ident.as_inner()))
+                .span(ident.span()),
+        )
+    }
+
+    pub fn template_list_to_ident(
+        &self,
+        list: Option<TemplateList>,
+    ) -> Result<Vec<Spanned<TemplateElaboratedIdent>>, Vec<Diagnostic>> {
+        let Some(list) = list else {
+            return Ok(vec![]);
+        };
+
+        let mut diagnostics = vec![];
+        let mut identifiers = vec![];
+
+        for expr in list.0 {
+            let span = expr.span();
+            match expr.inner() {
+                ExpressionInner::Ident(ident) => identifiers.push(ident),
+                _ => {
+                    diagnostics.push(
+                        Diagnostic::error("Only identifiers are allowed in template arguments")
+                            .span(span),
+                    );
+                }
+            }
+        }
+
+        if diagnostics.is_empty() {
+            Ok(identifiers)
+        } else {
+            Err(diagnostics)
+        }
+    }
+
+    pub fn apply_template_args(
+        &mut self,
+        handle: Handle<Type>,
+        ident: &Spanned<TemplateElaboratedIdent>,
+    ) -> Result<Handle<Type>, Vec<Diagnostic>> {
+        log::warn!("Applying template args");
+        let inner_type = self.apply_template_args_inner(handle, ident)?;
+        Ok(self.types.insert(inner_type))
+    }
+
+    pub fn apply_template_args_inner(
+        &mut self,
+        handle: Handle<Type>,
+        ident: &Spanned<TemplateElaboratedIdent>,
+    ) -> Result<Type, Vec<Diagnostic>> {
+        let args = ident.1.clone();
+        let ty = self.types.get(&handle).clone();
+
+        match ty {
+            Type::Alias(Alias { alias_base, .. }) => {
+                self.apply_template_args_inner(alias_base, ident)
+            }
+            Type::Plain(_) => match args {
+                Some(args) => Err(
+                    Diagnostic::error("Type does not take any template arguments")
+                        .span(if let Some(arg) = args.0.first() {
+                            arg.span()
+                        } else {
+                            SimpleSpan::new(0, 0)
+                        })
+                        .into(),
+                ),
+                None => Ok(ty.clone()),
+            },
+            Type::Generator(gen) => {
+                let as_identifiers = self.template_list_to_ident(args)?;
+                let applied =
+                    gen.apply_template_args(self, as_identifiers)
+                        .map_err(|mut err| {
+                            err[0] = err[0].clone().span(ident.span());
+                            err
+                        })?;
+                Ok(applied)
+            }
+        }
     }
 
     pub fn type_of_ident(
-        &self,
+        &mut self,
         ident: &Spanned<TemplateElaboratedIdent>,
-    ) -> Result<Type, Diagnostic> {
-        self.handle_of_ident(&ident.0)
-            .map(|handle| self.types.get(&handle).to_owned())
+    ) -> Result<Handle<Type>, Vec<Diagnostic>> {
+        let handle = self.handle_of_ident(&ident.0)?;
+        self.apply_template_args(handle, ident)
     }
 }
