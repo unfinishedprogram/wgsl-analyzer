@@ -177,25 +177,25 @@ impl TypeGenerator {
                         Ok(scalar.clone())
                     }
                     _ => Err(vec![Diagnostic::error(
-                        "Invalid matrix type provided. Matrix types can only be f32, f16",
+                        "Invalid matrix component type provided. Matrix types can only be f32, f16",
                     )
                     .span(args[0].span())]),
                 }?;
 
                 let res = match self {
-                    TypeGenerator::Mat2x2 => Plain::Mat(Mat::Mat2(VecType::Vec2(scalar_type))),
-                    TypeGenerator::Mat2x3 => Plain::Mat(Mat::Mat2(VecType::Vec3(scalar_type))),
-                    TypeGenerator::Mat2x4 => Plain::Mat(Mat::Mat2(VecType::Vec4(scalar_type))),
-                    TypeGenerator::Mat3x2 => Plain::Mat(Mat::Mat3(VecType::Vec2(scalar_type))),
-                    TypeGenerator::Mat3x3 => Plain::Mat(Mat::Mat3(VecType::Vec3(scalar_type))),
-                    TypeGenerator::Mat3x4 => Plain::Mat(Mat::Mat3(VecType::Vec4(scalar_type))),
-                    TypeGenerator::Mat4x2 => Plain::Mat(Mat::Mat4(VecType::Vec2(scalar_type))),
-                    TypeGenerator::Mat4x3 => Plain::Mat(Mat::Mat4(VecType::Vec3(scalar_type))),
-                    TypeGenerator::Mat4x4 => Plain::Mat(Mat::Mat4(VecType::Vec4(scalar_type))),
+                    TypeGenerator::Mat2x2 => Mat::Mat2(VecType::Vec2(scalar_type)),
+                    TypeGenerator::Mat2x3 => Mat::Mat2(VecType::Vec3(scalar_type)),
+                    TypeGenerator::Mat2x4 => Mat::Mat2(VecType::Vec4(scalar_type)),
+                    TypeGenerator::Mat3x2 => Mat::Mat3(VecType::Vec2(scalar_type)),
+                    TypeGenerator::Mat3x3 => Mat::Mat3(VecType::Vec3(scalar_type)),
+                    TypeGenerator::Mat3x4 => Mat::Mat3(VecType::Vec4(scalar_type)),
+                    TypeGenerator::Mat4x2 => Mat::Mat4(VecType::Vec2(scalar_type)),
+                    TypeGenerator::Mat4x3 => Mat::Mat4(VecType::Vec3(scalar_type)),
+                    TypeGenerator::Mat4x4 => Mat::Mat4(VecType::Vec4(scalar_type)),
                     _ => unreachable!(),
                 };
 
-                Ok(Type::Plain(res))
+                Ok(Type::Plain(Plain::Mat(res)))
             }
             TypeGenerator::Ptr => todo!(),
             TypeGenerator::Texture1D => todo!(),
@@ -209,9 +209,27 @@ impl TypeGenerator {
             TypeGenerator::TextureStorage2D => todo!(),
             TypeGenerator::TextureStorage2DArray => todo!(),
             TypeGenerator::TextureStorage3D => todo!(),
-            TypeGenerator::Vec2 => todo!(),
-            TypeGenerator::Vec3 => todo!(),
-            TypeGenerator::Vec4 => todo!(),
+            TypeGenerator::Vec2 | TypeGenerator::Vec3 | TypeGenerator::Vec4 => {
+                let component_handle = store.type_of_ident(&args[0])?;
+                let component_type = store.types.get(&component_handle);
+
+                let scalar_type = match component_type {
+                    Type::Plain(Plain::Scalar(scalar)) => Ok(scalar.clone()),
+                    _ => Err(vec![Diagnostic::error(
+                        "Invalid component type. Vector components must be of scalar types",
+                    )
+                    .span(args[0].span())]),
+                }?;
+
+                let res = match self {
+                    TypeGenerator::Vec2 => VecType::Vec2(scalar_type),
+                    TypeGenerator::Vec3 => VecType::Vec3(scalar_type),
+                    TypeGenerator::Vec4 => VecType::Vec4(scalar_type),
+                    _ => unreachable!(),
+                };
+
+                Ok(Type::Plain(Plain::Vec(res)))
+            }
         }
     }
 }
