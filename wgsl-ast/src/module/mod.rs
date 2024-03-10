@@ -38,47 +38,47 @@ pub struct Module {
 // Validation must be done in multiple passes:
 impl Module {
     pub fn from_ast(ast: Ast, source: String) -> Result<Self, Vec<Diagnostic>> {
-        if ast.errors.is_empty() {
-            let mut module_scope = ModuleScope::new();
-
-            let declarations: Vec<Spanned<Declaration>> = ast.top_level_declarations().collect();
-
-            let mut type_store = type_store::TypeStore::default();
-
-            // Inserts types,
-            // All types must be declared at module scope
-            type_store.insert_declarations(&declarations)?;
-
-            module_scope.insert_pre_declared_functions(&mut type_store)?;
-
-            // Inserts user-declared functions
-            // All user-defined functions must be defined at module scope
-            {
-                let functions: Vec<_> = ast.function_declarations().collect();
-                module_scope.insert_function_declarations(&mut type_store, &functions)?;
-            }
-
-            // We use this list of identifiers, to enable Ident picking/autocompletion in IDE
-            let identifiers = ast
-                .tokens
-                .iter()
-                .filter_map(|(token, span)| match *token {
-                    Token::Ident(s) => Some(s.to_owned().with_span(*span)),
-                    _ => None,
-                })
-                .collect();
-
-            Ok(Self {
-                source,
-                ast: ast.statements,
-                module_scope,
-                type_store,
-                identifiers,
-            })
-        } else {
+        if !ast.errors.is_empty() {
             let errors = ast.errors.iter().map(Diagnostic::from).collect();
-            Err(errors)
+            return Err(errors);
         }
+
+        let mut module_scope = ModuleScope::new();
+
+        let declarations: Vec<Spanned<Declaration>> = ast.top_level_declarations().collect();
+
+        let mut type_store = type_store::TypeStore::default();
+
+        // Inserts types,
+        // All types must be declared at module scope
+        type_store.insert_declarations(&declarations)?;
+
+        module_scope.insert_pre_declared_functions(&mut type_store)?;
+
+        // Inserts user-declared functions
+        // All user-defined functions must be defined at module scope
+        {
+            let functions: Vec<_> = ast.function_declarations().collect();
+            module_scope.insert_function_declarations(&mut type_store, &functions)?;
+        }
+
+        // We use this list of identifiers, to enable Ident picking/autocompletion in IDE
+        let identifiers = ast
+            .tokens
+            .iter()
+            .filter_map(|(token, span)| match *token {
+                Token::Ident(s) => Some(s.to_owned().with_span(*span)),
+                _ => None,
+            })
+            .collect();
+
+        Ok(Self {
+            source,
+            ast: ast.statements,
+            module_scope,
+            type_store,
+            identifiers,
+        })
     }
 
     pub fn from_source(source: &str) -> Result<Self, Vec<Diagnostic>> {
