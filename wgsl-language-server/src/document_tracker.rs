@@ -4,7 +4,7 @@ use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
     PublishDiagnosticsParams, TextDocumentItem, Url,
 };
-use wgsl_ast::module::Module;
+use wgsl_ast::module::{self, Module};
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
@@ -100,20 +100,37 @@ impl DocumentTracker {
         url: &Url,
         position: &Position,
     ) -> Option<lsp_types::LocationLink> {
-        if let Some(Ok(module)) = &self.documents[url].compilation_result {
-            let ident = module.ident_at_position(&string_offset(&module.source, position))?;
-            let type_handle = module.type_store.handle_of_ident(ident).ok()?;
-            let dest_span = module.type_store.span_of(&type_handle)?;
+        let Some(Ok(module)) = &self.documents[url].compilation_result else {
+            return None;
+        };
 
-            Some(new_location_link(
-                ident.span.into_range(),
-                dest_span.into_range(),
-                &module.source,
-                url.clone(),
-            ))
-        } else {
-            None
-        }
+        let ident = module.ident_at_position(&string_offset(&module.source, position))?;
+        // Search in types
+
+        let type_def_span = {
+            module
+                .type_store
+                .handle_of_ident(ident)
+                .ok()
+                .and_then(|type_handle| module.type_store.span_of(&type_handle))
+        };
+
+        let function_def_span = {
+            module
+                .module_scope
+                .functions
+                .get(&ident.inner)
+                .map(|f| f.span)
+        };
+
+        let dest_span = type_def_span.or(function_def_span)?;
+
+        Some(new_location_link(
+            ident.span.into_range(),
+            dest_span.into_range(),
+            &module.source,
+            url.clone(),
+        ))
     }
 
     pub fn get_symbols(&self) -> Vec<DocumentSymbol> {
