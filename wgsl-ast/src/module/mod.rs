@@ -11,11 +11,7 @@ use crate::{
     },
 };
 
-use self::{
-    scope::ModuleScope,
-    store::{handle::Handle, Store},
-    type_store::TypeStore,
-};
+use self::{scope::ModuleScope, type_store::TypeStore};
 
 pub mod declaration;
 mod scope;
