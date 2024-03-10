@@ -43,7 +43,7 @@ impl ModuleScope {
         functions: &[Spanned<declaration::Function>],
     ) -> Result<(), Vec<Diagnostic>> {
         for function in functions {
-            let res = Function::unprocessed_from_ast(self, type_store, function.inner.clone())?;
+            let res = Function::unprocessed_from_ast(type_store, function.inner.clone())?;
             self.functions.insert(function.ident.inner.clone(), res);
         }
 

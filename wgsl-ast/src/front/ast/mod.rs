@@ -1,7 +1,10 @@
 pub mod expression;
 pub mod statement;
 
-use self::statement::{declaration::Declaration, statement, Statement};
+use self::statement::{
+    declaration::{Declaration, Function},
+    statement, Statement,
+};
 use super::{
     span::{SpanAble, Spanned},
     token::{parse::tokenizer, template::insert_template_tokens, Token},
@@ -103,6 +106,14 @@ impl<'a> Ast<'a> {
             .iter()
             .filter_map(|Spanned { inner, span }| match inner {
                 Statement::Declaration(declaration) => Some(declaration.clone().with_span(*span)),
+                _ => None,
+            })
+    }
+
+    pub fn function_declarations(&self) -> impl Iterator<Item = Spanned<Function>> + '_ {
+        self.top_level_declarations()
+            .filter_map(|declaration| match declaration.inner {
+                Declaration::Function(function) => Some(function.with_span(declaration.span)),
                 _ => None,
             })
     }

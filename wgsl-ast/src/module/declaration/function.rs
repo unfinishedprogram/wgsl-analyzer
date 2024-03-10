@@ -5,7 +5,7 @@ use crate::{
         ast::statement::{attribute::Attribute, declaration, Statement},
         span::Spanned,
     },
-    module::{scope::ModuleScope, store::handle::Handle, type_store::TypeStore},
+    module::{store::handle::Handle, type_store::TypeStore},
 };
 pub enum FunctionBody {
     Validated(()),
@@ -19,6 +19,7 @@ pub struct FunctionParameter {
 }
 
 pub struct Function {
+    pub is_builtin: bool,
     pub attributes: Vec<Attribute>,
     pub ident: Spanned<String>,
     pub parameters: Vec<FunctionParameter>,
@@ -29,7 +30,6 @@ pub struct Function {
 
 impl Function {
     pub fn unprocessed_from_ast(
-        module_scope: &ModuleScope,
         type_store: &mut TypeStore,
         ast_function: declaration::Function,
     ) -> Result<Self, Vec<Diagnostic>> {
@@ -58,6 +58,7 @@ impl Function {
         };
 
         Ok(Self {
+            is_builtin: false,
             attributes,
             ident,
             parameters,

@@ -48,23 +48,17 @@ impl Module {
             // Inserts types,
             // All types must be declared at module scope
             type_store.insert_declarations(&declarations)?;
+
+            module_scope.insert_pre_declared_functions(&mut type_store)?;
+
             // Inserts user-declared functions
             // All user-defined functions must be defined at module scope
             {
-                let functions: Vec<_> = declarations
-                    .iter()
-                    .filter_map(|declaration| match declaration.inner {
-                        Declaration::Function(ref function) => {
-                            Some(function.clone().with_span(declaration.span))
-                        }
-                        _ => None,
-                    })
-                    .collect();
-
-                module_scope.insert_pre_declared_functions(&mut type_store)?;
+                let functions: Vec<_> = ast.function_declarations().collect();
                 module_scope.insert_function_declarations(&mut type_store, &functions)?;
             }
 
+            // We use this list of identifiers, to enable Ident picking/autocompletion in IDE
             let identifiers = ast
                 .tokens
                 .iter()
