@@ -115,12 +115,13 @@ impl TypeStore {
                     if let Some(diag) = self.validate_no_conflicting_definitions(ty.ident.clone()) {
                         diagnostics.push(diag);
                     } else {
+                        let alias_base = self.type_of_ident(&ty.value)?;
                         self.add(
                             &ty.ident.inner,
                             Type::Alias(Alias {
                                 ast: ty.clone().with_span(decl.span),
                                 ident: ty.ident.inner.clone(),
-                                alias_base: Handle::new(0),
+                                alias_base,
                                 template_args: vec![],
                             }),
                         );
