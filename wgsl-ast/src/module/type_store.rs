@@ -107,7 +107,6 @@ impl TypeStore {
         declarations: &[Spanned<Declaration>],
     ) -> Result<(), Vec<Diagnostic>> {
         // Since module declarations can appear out of order, we need to resolve them later
-        let mut to_resolve: Vec<Spanned<Declaration>> = vec![];
         let mut diagnostics: Vec<Diagnostic> = vec![];
 
         for decl in declarations {

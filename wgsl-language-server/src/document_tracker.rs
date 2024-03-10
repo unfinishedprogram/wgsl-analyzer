@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use lsp_types::{
-    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
-    PublishDiagnosticsParams, TextDocumentItem, Url,
+    DidChangeTextDocumentParams, DocumentSymbol, Position, PublishDiagnosticsParams,
+    TextDocumentItem, Url,
 };
-use wgsl_ast::module::{self, Module};
+use wgsl_ast::module::Module;
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
@@ -89,10 +89,6 @@ impl DocumentTracker {
         }
 
         diagnostics
-    }
-
-    pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
-        vec![]
     }
 
     pub fn get_definition(
