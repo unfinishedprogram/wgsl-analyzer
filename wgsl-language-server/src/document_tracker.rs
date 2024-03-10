@@ -101,29 +101,16 @@ impl DocumentTracker {
         position: &Position,
     ) -> Option<lsp_types::LocationLink> {
         if let Some(Ok(module)) = &self.documents[url].compilation_result {
-            module
-                .ident_at_position(&string_offset(&module.source, position))
-                .and_then(|s| {
-                    module
-                        .type_store
-                        .handle_of_ident(s)
-                        .ok()
-                        .map(|handle| (s.span, handle))
-                })
-                .and_then(|(source_span, handle)| {
-                    module
-                        .type_store
-                        .span_of(&handle)
-                        .map(|dest_span| (source_span, dest_span))
-                })
-                .map(|(source_span, dest_span)| {
-                    new_location_link(
-                        source_span.into_range(),
-                        dest_span.into_range(),
-                        &module.source,
-                        url.clone(),
-                    )
-                })
+            let ident = module.ident_at_position(&string_offset(&module.source, position))?;
+            let type_handle = module.type_store.handle_of_ident(ident).ok()?;
+            let dest_span = module.type_store.span_of(&type_handle)?;
+
+            Some(new_location_link(
+                ident.span.into_range(),
+                dest_span.into_range(),
+                &module.source,
+                url.clone(),
+            ))
         } else {
             None
         }

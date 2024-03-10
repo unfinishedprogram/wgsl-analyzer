@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     diagnostic::Diagnostic,
     front::{
-        ast::statement::declaration::{self},
-        span::Spanned,
+        ast::statement::declaration,
+        span::{SpanAble, Spanned, WithSpan},
     },
 };
 
@@ -15,7 +15,7 @@ use super::{declaration::function::Function, type_store::TypeStore};
 #[derive(Default)]
 pub struct ModuleScope {
     // Acts as a handle to the scopes struct
-    pub functions: HashMap<String, Function>,
+    pub functions: HashMap<String, Spanned<Function>>,
     pub variables: HashMap<String, usize>,
 }
 
@@ -43,8 +43,10 @@ impl ModuleScope {
         functions: &[Spanned<declaration::Function>],
     ) -> Result<(), Vec<Diagnostic>> {
         for function in functions {
+            let span = function.span();
             let res = Function::unprocessed_from_ast(type_store, function.inner.clone())?;
-            self.functions.insert(function.ident.inner.clone(), res);
+            self.functions
+                .insert(function.ident.inner.clone(), res.with_span(span));
         }
 
         Ok(())
