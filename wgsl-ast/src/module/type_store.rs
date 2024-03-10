@@ -33,8 +33,8 @@ macro_rules! mat_type {
     };
 }
 
-impl TypeStore {
-    pub fn new() -> Self {
+impl Default for TypeStore {
+    fn default() -> Self {
         // Initialize the store with pre-declared types and type-aliases
         let types = Arena::default();
         let identifiers = HashMap::new();
@@ -43,7 +43,9 @@ impl TypeStore {
         res.init();
         res
     }
+}
 
+impl TypeStore {
     pub fn add(&mut self, ident: impl Into<String>, ty: Type) {
         let handle = self.types.insert(ty);
         self.identifiers.insert(ident.into(), handle);
@@ -102,14 +104,14 @@ impl TypeStore {
 
     pub fn insert_declarations(
         &mut self,
-        declarations: Vec<Spanned<Declaration>>,
+        declarations: &[Spanned<Declaration>],
     ) -> Result<(), Vec<Diagnostic>> {
         // Since module declarations can appear out of order, we need to resolve them later
         let mut to_resolve: Vec<Spanned<Declaration>> = vec![];
         let mut diagnostics: Vec<Diagnostic> = vec![];
 
         for decl in declarations {
-            match decl.inner {
+            match decl.as_inner() {
                 Declaration::TypeAlias(ty) => {
                     if let Some(diag) = self.validate_no_conflicting_definitions(ty.ident.clone()) {
                         diagnostics.push(diag);
@@ -125,10 +127,12 @@ impl TypeStore {
                         );
                     }
                 }
-                Declaration::Struct(s) => match self.struct_from_ast(s.with_span(decl.span)) {
-                    Ok(s) => self.add(s.ident.clone(), Type::Plain(Plain::Struct(s))),
-                    Err(mut e) => diagnostics.append(&mut e),
-                },
+                Declaration::Struct(s) => {
+                    match self.struct_from_ast(s.clone().with_span(decl.span)) {
+                        Ok(s) => self.add(s.ident.clone(), Type::Plain(Plain::Struct(s))),
+                        Err(mut e) => diagnostics.append(&mut e),
+                    }
+                }
                 // Other declarations do not produce types
                 _ => {}
             }

@@ -1,6 +1,17 @@
 use std::collections::HashMap;
 
-use super::store::{handle::Handle, Store};
+use crate::{
+    diagnostic::Diagnostic,
+    front::{
+        ast::statement::declaration::{self, Declaration},
+        span::Spanned,
+    },
+};
+
+use super::{
+    store::{handle::Handle, Store},
+    type_store::TypeStore,
+};
 
 // Scopes can only ever be added to, never removed
 #[derive(Default)]
@@ -39,9 +50,32 @@ impl Store<Scope> for Scopes {
     }
 }
 
+// The only scope without a parent scope, is the module scope
+// Functions can only be declared in the module's scope
 pub struct Scope {
     // Acts as a handle to the scopes struct
     pub parent: Option<Handle<Scope>>,
     pub variables: HashMap<String, usize>,
     pub functions: HashMap<String, usize>,
+}
+
+impl Scope {
+    pub fn insert_pre_declared_functions(
+        &mut self,
+        type_store: &mut TypeStore,
+    ) -> Result<(), Diagnostic> {
+        Ok(())
+    }
+
+    pub fn insert_function_declarations(
+        &mut self,
+        type_store: &mut TypeStore,
+        functions: &[Spanned<declaration::Function>],
+    ) -> Result<(), Diagnostic> {
+        for function in functions {
+            todo!()
+        }
+
+        Ok(())
+    }
 }

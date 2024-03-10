@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use lsp_types::{
-    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Location, Position,
+    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
     PublishDiagnosticsParams, TextDocumentItem, Url,
 };
 use wgsl_ast::module::Module;
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
-    range_tools::{new_location, new_location_link, string_offset, string_range},
+    range_tools::{new_location_link, string_offset, string_range},
     // completion_provider::CompletionProvider,
     symbol_provider::SymbolProvider,
 };

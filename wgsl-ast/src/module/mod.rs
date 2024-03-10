@@ -13,7 +13,7 @@ use crate::{
 
 use self::{
     scope::{Scope, Scopes},
-    store::handle::Handle,
+    store::{handle::Handle, Store},
     type_store::TypeStore,
 };
 
@@ -43,10 +43,31 @@ impl Module {
             let mut scopes = Scopes::default();
             let module_scope = scopes.create_scope(None);
 
-            let declarations = ast.top_level_declarations().collect();
+            let declarations: Vec<Spanned<Declaration>> = ast.top_level_declarations().collect();
 
-            let mut type_store = type_store::TypeStore::new();
-            type_store.insert_declarations(declarations)?;
+            let mut type_store = type_store::TypeStore::default();
+
+            // Inserts types,
+            // All types must be declared at module scope
+            type_store.insert_declarations(&declarations)?;
+            // Inserts user-declared functions
+            // All user-defined functions must be defined at module scope
+            {
+                let module_scope = scopes.get_mut(&module_scope);
+
+                let functions: Vec<_> = declarations
+                    .iter()
+                    .filter_map(|declaration| match declaration.inner {
+                        Declaration::Function(ref function) => {
+                            Some(function.clone().with_span(declaration.span))
+                        }
+                        _ => None,
+                    })
+                    .collect();
+
+                module_scope.insert_pre_declared_functions(&mut type_store)?;
+                module_scope.insert_function_declarations(&mut type_store, &functions)?;
+            }
 
             let identifiers = ast
                 .tokens
