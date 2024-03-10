@@ -1,5 +1,5 @@
 use crate::{
-    diagnostic::Diagnostic,
+    diagnostic::{Diagnostic, DiagnosticSource},
     front::{
         ast::{
             create_ast,
@@ -29,11 +29,14 @@ pub struct Module {
     pub module_scope: ModuleScope,
     pub type_store: TypeStore,
     pub identifiers: Vec<Spanned<String>>,
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 // Validation must be done in multiple passes:
 impl Module {
     pub fn from_ast(ast: Ast, source: String) -> Result<Self, Vec<Diagnostic>> {
+        let mut diagnostics: Vec<Diagnostic> = vec![];
+
         if !ast.errors.is_empty() {
             let errors = ast.errors.iter().map(Diagnostic::from).collect();
             return Err(errors);
@@ -47,15 +50,21 @@ impl Module {
 
         // Inserts types,
         // All types must be declared at module scope
-        type_store.insert_declarations(&declarations)?;
+        type_store
+            .insert_declarations(&declarations)
+            .extend(&mut diagnostics);
 
-        module_scope.insert_pre_declared_functions(&mut type_store)?;
+        module_scope
+            .insert_pre_declared_functions(&mut type_store)
+            .extend(&mut diagnostics);
 
         // Inserts user-declared functions
         // All user-defined functions must be defined at module scope
         {
             let functions: Vec<_> = ast.function_declarations().collect();
-            module_scope.insert_function_declarations(&mut type_store, &functions)?;
+            module_scope
+                .insert_function_declarations(&mut type_store, &functions)
+                .extend(&mut diagnostics);
         }
 
         // We use this list of identifiers, to enable Ident picking/autocompletion in IDE
@@ -68,7 +77,9 @@ impl Module {
             })
             .collect();
 
-        module_scope.validate_functions(&mut type_store)?;
+        module_scope
+            .validate_functions(&mut type_store)
+            .extend(&mut diagnostics);
 
         Ok(Self {
             source,
@@ -76,6 +87,7 @@ impl Module {
             module_scope,
             type_store,
             identifiers,
+            diagnostics,
         })
     }
 

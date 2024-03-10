@@ -68,3 +68,24 @@ impl From<Diagnostic> for Vec<Diagnostic> {
         vec![diag]
     }
 }
+
+pub trait DiagnosticSource {
+    fn get_maybe_diagnostics(&self) -> Option<Vec<Diagnostic>>;
+    fn extend(&self, group: &mut Vec<Diagnostic>) {
+        if let Some(diagnostics) = self.get_maybe_diagnostics() {
+            group.extend(diagnostics);
+        }
+    }
+}
+
+impl<T> DiagnosticSource for Result<T, Vec<Diagnostic>> {
+    fn get_maybe_diagnostics(&self) -> Option<Vec<Diagnostic>> {
+        self.as_ref().err().cloned()
+    }
+}
+
+impl<T> DiagnosticSource for Result<T, Diagnostic> {
+    fn get_maybe_diagnostics(&self) -> Option<Vec<Diagnostic>> {
+        self.as_ref().err().cloned().map(|v| vec![v])
+    }
+}

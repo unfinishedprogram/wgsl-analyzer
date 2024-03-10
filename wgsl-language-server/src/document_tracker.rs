@@ -28,13 +28,16 @@ impl TrackedDocument {
     }
 
     pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
-        match &self.compilation_result {
-            Some(Err(diagnostics)) => diagnostics
-                .iter()
-                .map(|d| wgsl_error_to_lsp_diagnostic(self.uri.clone(), &self.content, d))
-                .collect(),
-            _ => vec![],
-        }
+        let diagnostics = match &self.compilation_result {
+            Some(Ok(module)) => &module.diagnostics,
+            Some(Err(diagnostics)) => diagnostics,
+            None => return vec![],
+        };
+
+        diagnostics
+            .iter()
+            .map(|d| wgsl_error_to_lsp_diagnostic(self.uri.clone(), &self.content, d))
+            .collect()
     }
 }
 
