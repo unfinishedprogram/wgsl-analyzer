@@ -1,7 +1,14 @@
 use chumsky::span::SimpleSpan;
 pub mod generator;
 
-use crate::{front::span::Spanned, module::store::handle::Handle};
+use crate::{
+    diagnostic::Diagnostic,
+    front::span::Spanned,
+    module::{
+        store::{handle::Handle, Store},
+        type_store::TypeStore,
+    },
+};
 
 use self::generator::TypeGenerator;
 
@@ -81,6 +88,38 @@ impl Type {
             Type::Alias(a) => Some(a.ast.span),
             Type::Plain(Plain::Struct(s)) => Some(s.ast.span),
             _ => None,
+        }
+    }
+
+    pub fn validate_is_constructable(&self, type_store: &mut TypeStore) -> Result<(), Diagnostic> {
+        match self {
+            Type::Alias(ty) => {
+                let base = type_store.types.get(&ty.alias_base).clone();
+                base.validate_is_constructable(type_store)
+            }
+            Type::Generator(_) => Err(Diagnostic::error("type generators are not constructable")),
+            Type::Plain(ty) => match ty {
+                Plain::Scalar(_) => Ok(()),
+                Plain::Array(_, None) => {
+                    Err(Diagnostic::error("unsized arrays are not constructable"))
+                }
+                Plain::Array(ty, Some(_)) => {
+                    let component = type_store.types.get(ty).clone();
+                    component.validate_is_constructable(type_store)
+                }
+                Plain::Struct(s) => {
+                    for member in &s.members {
+                        let member_ty = type_store.types.get(&member.ty).clone();
+                        member_ty
+                            .validate_is_constructable(type_store)
+                            .map_err(|err| err.span_if_none(member.ast.span))?;
+                    }
+                    Ok(())
+                }
+                Plain::Mat(_) => Ok(()),
+                Plain::Vec(_) => Ok(()),
+                Plain::Atomic(_) => Err(Diagnostic::error("atomic types are not constructable")),
+            },
         }
     }
 }
