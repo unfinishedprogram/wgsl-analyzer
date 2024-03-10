@@ -76,9 +76,9 @@ pub enum Declaration {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionParameter {
-    attributes: Vec<Attribute>,
-    ident: Spanned<String>,
-    value: Spanned<TemplateElaboratedIdent>,
+    pub attributes: Vec<Attribute>,
+    pub ident: Spanned<String>,
+    pub value: Spanned<TemplateElaboratedIdent>,
 }
 
 pub fn variable_or_value_decl<'tokens, 'src: 'tokens>(

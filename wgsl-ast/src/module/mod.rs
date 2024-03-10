@@ -12,7 +12,7 @@ use crate::{
 };
 
 use self::{
-    scope::{Scope, Scopes},
+    scope::ModuleScope,
     store::{handle::Handle, Store},
     type_store::TypeStore,
 };
@@ -30,8 +30,7 @@ mod type_store;
 pub struct Module {
     pub source: String,
     pub ast: Vec<Spanned<Statement>>,
-    pub scopes: Scopes,
-    pub module_scope: Handle<Scope>,
+    pub module_scope: ModuleScope,
     pub type_store: TypeStore,
     pub identifiers: Vec<Spanned<String>>,
 }
@@ -40,8 +39,7 @@ pub struct Module {
 impl Module {
     pub fn from_ast(ast: Ast, source: String) -> Result<Self, Vec<Diagnostic>> {
         if ast.errors.is_empty() {
-            let mut scopes = Scopes::default();
-            let module_scope = scopes.create_scope(None);
+            let mut module_scope = ModuleScope::new();
 
             let declarations: Vec<Spanned<Declaration>> = ast.top_level_declarations().collect();
 
@@ -53,8 +51,6 @@ impl Module {
             // Inserts user-declared functions
             // All user-defined functions must be defined at module scope
             {
-                let module_scope = scopes.get_mut(&module_scope);
-
                 let functions: Vec<_> = declarations
                     .iter()
                     .filter_map(|declaration| match declaration.inner {
@@ -81,9 +77,8 @@ impl Module {
             Ok(Self {
                 source,
                 ast: ast.statements,
-                scopes,
-                type_store,
                 module_scope,
+                type_store,
                 identifiers,
             })
         } else {
