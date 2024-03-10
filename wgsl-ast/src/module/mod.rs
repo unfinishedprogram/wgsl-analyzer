@@ -11,10 +11,10 @@ use crate::{
     },
 };
 
-use self::{scope::ModuleScope, type_store::TypeStore};
+use self::{module_scope::ModuleScope, type_store::TypeStore};
 
 pub mod declaration;
-mod scope;
+mod module_scope;
 mod store;
 mod type_store;
 
@@ -67,6 +67,8 @@ impl Module {
                 _ => None,
             })
             .collect();
+
+        module_scope.validate_functions(&mut type_store)?;
 
         Ok(Self {
             source,

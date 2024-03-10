@@ -26,19 +26,19 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
     Trivia,
-    Compound(Vec<Statement>),
+    Compound(Vec<Spanned<Statement>>),
     Assignment(LHSExpression, AssignmentOperator, Expression),
     Increment(LHSExpression),
     Decrement(LHSExpression),
     Return(Option<Expression>),
     Continue,
-    Continuing(Vec<Attribute>, Vec<Statement>),
+    Continuing(Vec<Attribute>, Vec<Spanned<Statement>>),
     Break,
     BreakIf(Expression),
     If {
-        if_block: (Expression, Vec<Statement>),
-        else_if_blocks: Vec<(Expression, Vec<Statement>)>,
-        else_block: Option<Vec<Statement>>,
+        if_block: (Expression, Vec<Spanned<Statement>>),
+        else_if_blocks: Vec<(Expression, Vec<Spanned<Statement>>)>,
+        else_block: Option<Vec<Spanned<Statement>>>,
     },
     Declaration(Declaration),
     FuncCall(CallPhrase),
@@ -46,19 +46,19 @@ pub enum Statement {
     Loop {
         loop_attributes: Vec<Attribute>,
         body_attributes: Vec<Attribute>,
-        body: Vec<Statement>,
+        body: Vec<Spanned<Statement>>,
     },
     For {
         attributes: Vec<Attribute>,
         init: Box<Option<Statement>>,
         expression: Box<Option<Expression>>,
         update: Box<Option<Statement>>,
-        body: Vec<Statement>,
+        body: Vec<Spanned<Statement>>,
     },
     While {
         attributes: Vec<Attribute>,
         expression: Expression,
-        body: Vec<Statement>,
+        body: Vec<Spanned<Statement>>,
     },
     Switch {
         attributes: Vec<Attribute>,
@@ -69,8 +69,8 @@ pub enum Statement {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SwitchClause {
-    Case(Vec<CaseClause>, Vec<Statement>),
-    Default(Vec<Statement>),
+    Case(Vec<CaseClause>, Vec<Spanned<Statement>>),
+    Default(Vec<Spanned<Statement>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -218,11 +218,12 @@ fn compound_statement<'tokens, 'src: 'tokens>(
     stmt: impl Parser<'tokens, ParserInput<'tokens, 'src>, Statement, RichErr<'src, 'tokens>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Vec<Statement>, RichErr<'src, 'tokens>> + Clone
-{
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Vec<Spanned<Statement>>, RichErr<'src, 'tokens>>
+       + Clone {
     just(Token::Trivia)
         .or_not()
         .ignore_then(stmt)
+        .map_with(map_span)
         .then_ignore(just(Token::Trivia).or_not())
         .repeated()
         .collect()

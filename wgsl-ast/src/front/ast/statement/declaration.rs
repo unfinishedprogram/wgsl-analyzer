@@ -61,7 +61,7 @@ pub struct Function {
     pub ident: Spanned<String>,
     pub parameters: Vec<FunctionParameter>,
     pub return_type: Option<(Vec<Attribute>, Spanned<TemplateElaboratedIdent>)>,
-    pub body: Vec<Statement>,
+    pub body: Vec<Spanned<Statement>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

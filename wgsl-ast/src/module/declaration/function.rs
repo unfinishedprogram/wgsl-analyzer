@@ -1,3 +1,8 @@
+mod scope;
+pub mod validate;
+
+use self::scope::ScopeStore;
+
 use super::r#type::Type;
 use crate::{
     diagnostic::Diagnostic,
@@ -8,8 +13,8 @@ use crate::{
     module::{store::handle::Handle, type_store::TypeStore},
 };
 pub enum FunctionBody {
-    Validated(()),
-    Unprocessed(Vec<Statement>),
+    Validated(ScopeStore),
+    Unprocessed(Vec<Spanned<Statement>>),
 }
 
 pub struct FunctionParameter {
