@@ -23,7 +23,7 @@ impl Default for ScopeStore {
 
 impl ScopeStore {
     pub fn root(&self) -> Handle<Scope> {
-        self.root.clone()
+        self.root
     }
 
     pub fn insert_child(&mut self, parent: Handle<Scope>) -> Handle<Scope> {
