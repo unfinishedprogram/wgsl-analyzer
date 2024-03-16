@@ -5,7 +5,7 @@ use chumsky::span::SimpleSpan;
 
 use crate::front::ast::ModuleError;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Diagnostic {
     pub severity: Severity,
     pub span: Option<SimpleSpan>,
@@ -13,7 +13,7 @@ pub struct Diagnostic {
     pub related_info: Vec<DiagnosticRelatedInfo>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DiagnosticRelatedInfo {
     pub span: SimpleSpan,
     pub message: String,

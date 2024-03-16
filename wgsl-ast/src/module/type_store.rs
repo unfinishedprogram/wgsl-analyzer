@@ -334,3 +334,63 @@ impl TypeStore {
         self.apply_template_args(handle, ident)
     }
 }
+
+pub mod tests {
+    #[test]
+    pub fn matrix_type_aliases() {
+        use super::*;
+        let store = TypeStore::default();
+
+        for (ident, ty) in [
+            ("mat2x2f", Mat::Mat2(VecType::Vec2(Scalar::F32))),
+            ("mat2x3f", Mat::Mat2(VecType::Vec3(Scalar::F32))),
+            ("mat2x4f", Mat::Mat2(VecType::Vec4(Scalar::F32))),
+            ("mat3x2f", Mat::Mat3(VecType::Vec2(Scalar::F32))),
+            ("mat3x3f", Mat::Mat3(VecType::Vec3(Scalar::F32))),
+            ("mat3x4f", Mat::Mat3(VecType::Vec4(Scalar::F32))),
+            ("mat4x2f", Mat::Mat4(VecType::Vec2(Scalar::F32))),
+            ("mat4x3f", Mat::Mat4(VecType::Vec3(Scalar::F32))),
+            ("mat4x4f", Mat::Mat4(VecType::Vec4(Scalar::F32))),
+            ("mat2x2h", Mat::Mat2(VecType::Vec2(Scalar::F16))),
+            ("mat2x3h", Mat::Mat2(VecType::Vec3(Scalar::F16))),
+            ("mat2x4h", Mat::Mat2(VecType::Vec4(Scalar::F16))),
+            ("mat3x2h", Mat::Mat3(VecType::Vec2(Scalar::F16))),
+            ("mat3x3h", Mat::Mat3(VecType::Vec3(Scalar::F16))),
+            ("mat3x4h", Mat::Mat3(VecType::Vec4(Scalar::F16))),
+            ("mat4x2h", Mat::Mat4(VecType::Vec2(Scalar::F16))),
+            ("mat4x3h", Mat::Mat4(VecType::Vec3(Scalar::F16))),
+            ("mat4x4h", Mat::Mat4(VecType::Vec4(Scalar::F16))),
+        ] {
+            let ty = Type::Plain(Plain::Mat(ty));
+            let handle = store.get_raw_ident_type(ident).unwrap();
+            assert_eq!(*store.types.get(&handle), ty);
+        }
+    }
+
+    #[test]
+    pub fn vector_type_aliases() {
+        use super::*;
+        let store = TypeStore::default();
+
+        for (ident, ty) in [
+            ("vec2i", VecType::Vec2(Scalar::I32)),
+            ("vec3i", VecType::Vec3(Scalar::I32)),
+            ("vec4i", VecType::Vec4(Scalar::I32)),
+            ("vec2u", VecType::Vec2(Scalar::U32)),
+            ("vec3u", VecType::Vec3(Scalar::U32)),
+            ("vec4u", VecType::Vec4(Scalar::U32)),
+            ("vec2f", VecType::Vec2(Scalar::F32)),
+            ("vec3f", VecType::Vec3(Scalar::F32)),
+            ("vec4f", VecType::Vec4(Scalar::F32)),
+            ("vec2h", VecType::Vec2(Scalar::F16)),
+            ("vec3h", VecType::Vec3(Scalar::F16)),
+            ("vec4h", VecType::Vec4(Scalar::F16)),
+        ] {
+            let ty = Type::Plain(Plain::Vec(ty));
+
+            let handle = store.get_raw_ident_type(ident).unwrap();
+
+            assert_eq!(*store.types.get(&handle), ty);
+        }
+    }
+}
