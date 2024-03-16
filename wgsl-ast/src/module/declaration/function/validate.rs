@@ -1,4 +1,4 @@
-use super::{Function, FunctionBody};
+use super::{Function, FunctionBody, UserDefined};
 use crate::{
     diagnostic::Diagnostic,
     front::ast::statement::{declaration::Declaration, Statement},
@@ -8,6 +8,19 @@ use crate::{
 };
 
 impl Function {
+    pub fn validate(
+        &self,
+        module_scope: &ModuleScope,
+        type_store: &TypeStore,
+    ) -> Result<FunctionBody, Vec<Diagnostic>> {
+        match self {
+            Function::UserDefined(user_defined) => user_defined.validate(module_scope, type_store),
+            Function::Builtin(_) => unreachable!("Builtin functions should never be validated"),
+        }
+    }
+}
+
+impl UserDefined {
     pub fn validate(
         &self,
         module_scope: &ModuleScope,

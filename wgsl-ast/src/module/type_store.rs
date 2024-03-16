@@ -231,6 +231,16 @@ impl TypeStore {
         self.types.get(ty).definition_span()
     }
 
+    pub fn get_raw_ident_type(&self, ident: &str) -> Result<Handle<Type>, Diagnostic> {
+        self.identifiers
+            .get(ident)
+            .cloned()
+            .ok_or(Diagnostic::error(format!(
+                "Type: '{}' is not defined",
+                ident
+            )))
+    }
+
     pub fn handle_of_ident(&self, ident: &Spanned<String>) -> Result<Handle<Type>, Diagnostic> {
         self.identifiers.get(&ident.inner).cloned().ok_or(
             Diagnostic::error(format!("Type: '{}' is not defined", ident.as_inner()))

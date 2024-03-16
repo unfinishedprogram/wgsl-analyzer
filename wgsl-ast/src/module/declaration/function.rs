@@ -1,14 +1,15 @@
+mod builtin;
 mod scope;
 pub mod validate;
 
-use self::scope::ScopeStore;
+use self::{builtin::Builtin, scope::ScopeStore};
 
 use super::r#type::Type;
 use crate::{
     diagnostic::Diagnostic,
     front::{
         ast::statement::{attribute::Attribute, declaration, Statement},
-        span::Spanned,
+        span::{SpanAble, Spanned},
     },
     module::{store::handle::Handle, type_store::TypeStore},
 };
@@ -23,8 +24,7 @@ pub struct FunctionParameter {
     pub ty: Handle<Type>,
 }
 
-pub struct Function {
-    pub is_builtin: bool,
+pub struct UserDefined {
     pub attributes: Vec<Attribute>,
     pub ident: Spanned<String>,
     pub parameters: Vec<FunctionParameter>,
@@ -33,12 +33,25 @@ pub struct Function {
     pub body: FunctionBody,
 }
 
+pub enum Function {
+    UserDefined(Spanned<UserDefined>),
+    Builtin(builtin::Builtin),
+}
+
 impl Function {
+    pub fn get_all_builtin_functions(type_store: &TypeStore) -> Result<Vec<Function>, Diagnostic> {
+        let res = Builtin::get_all_builtin_functions(type_store)?;
+        Ok(res.into_iter().map(Function::Builtin).collect())
+    }
+
     pub fn unprocessed_from_ast(
         type_store: &mut TypeStore,
-        ast_function: declaration::Function,
+        ast_function: Spanned<declaration::Function>,
     ) -> Result<Self, Vec<Diagnostic>> {
         let mut parameters = vec![];
+        let ast_span = ast_function.span;
+        let ast_function = ast_function.inner;
+
         for ast_parameter in ast_function.parameters {
             let ident = ast_parameter.ident;
             let attributes = ast_parameter.attributes;
@@ -62,14 +75,16 @@ impl Function {
             (None, vec![])
         };
 
-        Ok(Self {
-            is_builtin: false,
-            attributes,
-            ident,
-            parameters,
-            return_attributes,
-            return_type,
-            body,
-        })
+        Ok(Self::UserDefined(
+            UserDefined {
+                attributes,
+                ident,
+                parameters,
+                return_attributes,
+                return_type,
+                body,
+            }
+            .with_span(ast_span),
+        ))
     }
 }

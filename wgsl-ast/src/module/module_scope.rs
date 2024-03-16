@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     diagnostic::Diagnostic,
-    front::{
-        ast::statement::declaration,
-        span::{SpanAble, Spanned, WithSpan},
-    },
+    front::{ast::statement::declaration, span::Spanned},
 };
 
 use super::{declaration::function::Function, type_store::TypeStore};
@@ -15,7 +12,7 @@ use super::{declaration::function::Function, type_store::TypeStore};
 #[derive(Default)]
 pub struct ModuleScope {
     // Acts as a handle to the scopes struct
-    pub functions: HashMap<String, Spanned<Function>>,
+    pub functions: HashMap<String, Function>,
     pub variables: HashMap<String, usize>,
 }
 
@@ -30,6 +27,16 @@ impl ModuleScope {
         &mut self,
         type_store: &mut TypeStore,
     ) -> Result<(), Vec<Diagnostic>> {
+        let functions = Function::get_all_builtin_functions(type_store)?;
+        for function in functions {
+            match function {
+                Function::Builtin(function) => {
+                    self.functions
+                        .insert(function.ident.to_owned(), Function::Builtin(function));
+                },
+                _ => unreachable!("User defined functions should never be returned form get_all_builtin_functions")
+            }
+        }
         Ok(())
     }
 
@@ -43,10 +50,8 @@ impl ModuleScope {
         functions: &[Spanned<declaration::Function>],
     ) -> Result<(), Vec<Diagnostic>> {
         for function in functions {
-            let span = function.span();
-            let res = Function::unprocessed_from_ast(type_store, function.inner.clone())?;
-            self.functions
-                .insert(function.ident.inner.clone(), res.with_span(span));
+            let res = Function::unprocessed_from_ast(type_store, function.clone())?;
+            self.functions.insert(function.ident.inner.clone(), res);
         }
 
         Ok(())
@@ -61,8 +66,13 @@ impl ModuleScope {
 
         for key in keys {
             let function = self.functions.get(&key).unwrap();
-            let res = function.inner.validate(self, type_store)?;
-            self.functions.get_mut(&key).unwrap().inner.body = res;
+            if let Function::UserDefined(function) = function {
+                let res = function.inner.validate(self, type_store)?;
+
+                if let Some(Function::UserDefined(function)) = self.functions.get_mut(&key) {
+                    function.inner.body = res;
+                }
+            }
         }
 
         Ok(())

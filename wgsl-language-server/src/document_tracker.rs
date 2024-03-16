@@ -4,7 +4,7 @@ use lsp_types::{
     DidChangeTextDocumentParams, DocumentSymbol, Position, PublishDiagnosticsParams,
     TextDocumentItem, Url,
 };
-use wgsl_ast::module::Module;
+use wgsl_ast::module::{declaration::function::Function, Module};
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
@@ -115,11 +115,12 @@ impl DocumentTracker {
         };
 
         let function_def_span = {
-            module
-                .module_scope
-                .functions
-                .get(&ident.inner)
-                .map(|f| f.span)
+            let function = module.module_scope.functions.get(&ident.inner);
+            if let Some(Function::UserDefined(f)) = function {
+                Some(f.span)
+            } else {
+                None
+            }
         };
 
         let dest_span = type_def_span.or(function_def_span)?;
