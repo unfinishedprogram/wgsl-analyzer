@@ -1,4 +1,26 @@
+use wgsl_ast::module::declaration::r#type::{Plain, Type};
+
 use crate::range_tools::lsp_range_from_char_span;
+
+pub trait DefinitionLocationProvider {
+    fn definition_location(&self) -> Option<DefinitionLocation>;
+}
+
+impl DefinitionLocationProvider for Type {
+    fn definition_location(&self) -> Option<DefinitionLocation> {
+        match self {
+            Type::Alias(a) => Some(DefinitionLocation::new(
+                a.ast.inner.ident.span.into_range(),
+                a.ast.span.into_range(),
+            )),
+            Type::Plain(Plain::Struct(s)) => Some(DefinitionLocation::new(
+                s.ast.inner.ident.span.into_range(),
+                s.ast.span.into_range(),
+            )),
+            _ => None,
+        }
+    }
+}
 
 pub struct FindDefinitionResult {
     pub selection_range: std::ops::Range<usize>,

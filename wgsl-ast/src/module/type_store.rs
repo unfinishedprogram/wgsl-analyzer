@@ -231,6 +231,10 @@ impl TypeStore {
         self.types.get(ty).definition_span()
     }
 
+    pub fn get_type(&self, ty: &Handle<Type>) -> &Type {
+        self.types.get(ty)
+    }
+
     pub fn get_raw_ident_type(&self, ident: &str) -> Result<Handle<Type>, Diagnostic> {
         self.identifiers
             .get(ident)

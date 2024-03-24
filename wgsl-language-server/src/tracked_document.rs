@@ -3,7 +3,7 @@ use wgsl_ast::module::{declaration::function::Function, Module};
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
-    find_definition::{DefinitionLocation, FindDefinitionResult},
+    find_definition::{DefinitionLocation, DefinitionLocationProvider, FindDefinitionResult},
     range_tools::{string_offset, string_range},
 };
 
@@ -48,15 +48,18 @@ impl TrackedDocument {
         };
 
         let ident = module.ident_at_position(&string_offset(&module.source, position))?;
-        // Search in types
 
         let type_def_location = {
             module
                 .type_store
                 .handle_of_ident(ident)
                 .ok()
-                .and_then(|type_handle| module.type_store.span_of(&type_handle))
-                .map(|span| DefinitionLocation::from_range(span.into()))
+                .and_then(|type_handle| {
+                    module
+                        .type_store
+                        .get_type(&type_handle)
+                        .definition_location()
+                })
         };
 
         let function_def_location = {
