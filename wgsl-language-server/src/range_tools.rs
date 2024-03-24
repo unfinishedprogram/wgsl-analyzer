@@ -32,33 +32,41 @@ pub fn position_at_char_offset(source: &str, char_offset: usize) -> Position {
     Position::default()
 }
 
-pub fn lsp_range_from_char_span(source: &str, span: std::ops::Range<usize>) -> lsp_types::Range {
+pub fn lsp_range_from_char_span(source: &str, span: &std::ops::Range<usize>) -> lsp_types::Range {
     let start = position_at_char_offset(source, span.start);
     let end = position_at_char_offset(source, span.end);
     lsp_types::Range { start, end }
 }
 
-pub fn new_location_link(
-    selection_range: std::ops::Range<usize>,
-    range: std::ops::Range<usize>,
-    source: &str,
-    uri: lsp_types::Url,
-) -> LocationLink {
-    let std::ops::Range { start, end } = range;
+pub struct DefinitionLink {
+    pub selection_range: std::ops::Range<usize>,
+    pub target_range: std::ops::Range<usize>,
+}
 
-    let start = position_at_char_offset(source, start);
-    let end = position_at_char_offset(source, end);
+impl DefinitionLink {
+    pub fn new(
+        selection_range: std::ops::Range<usize>,
+        target_range: std::ops::Range<usize>,
+    ) -> DefinitionLink {
+        DefinitionLink {
+            selection_range,
+            target_range,
+        }
+    }
 
-    let sel_start = position_at_char_offset(source, selection_range.start);
-    let sel_end = position_at_char_offset(source, selection_range.end);
+    pub fn into_lsp_location_link(
+        self,
+        source: &str,
+        uri: &lsp_types::Url,
+    ) -> lsp_types::LocationLink {
+        let target_range = lsp_range_from_char_span(source, &self.target_range);
+        let selection_range = lsp_range_from_char_span(source, &self.selection_range);
 
-    LocationLink {
-        target_uri: uri,
-        target_range: lsp_types::Range { start, end },
-        target_selection_range: lsp_types::Range { start, end },
-        origin_selection_range: Some(lsp_types::Range {
-            start: sel_start,
-            end: sel_end,
-        }),
+        LocationLink {
+            target_uri: uri.clone(),
+            target_range,
+            target_selection_range: target_range,
+            origin_selection_range: Some(selection_range),
+        }
     }
 }

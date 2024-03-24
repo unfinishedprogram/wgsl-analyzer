@@ -1,7 +1,10 @@
-use lsp_types::TextDocumentItem;
-use wgsl_ast::module::Module;
+use lsp_types::{Position, TextDocumentItem};
+use wgsl_ast::module::{declaration::function::Function, Module};
 
-use crate::{diagnostic::wgsl_error_to_lsp_diagnostic, range_tools::string_range};
+use crate::{
+    diagnostic::wgsl_error_to_lsp_diagnostic,
+    range_tools::{string_offset, string_range, DefinitionLink},
+};
 
 pub struct TrackedDocument {
     pub lsp_doc: TextDocumentItem,
@@ -36,6 +39,39 @@ impl TrackedDocument {
             .iter()
             .map(|d| wgsl_error_to_lsp_diagnostic(self.uri().clone(), &self.lsp_doc.text, d))
             .collect()
+    }
+
+    pub fn get_definition(&self, position: &Position) -> Option<DefinitionLink> {
+        let Some(Ok(module)) = &self.compilation_result else {
+            return None;
+        };
+
+        let ident = module.ident_at_position(&string_offset(&module.source, position))?;
+        // Search in types
+
+        let type_def_span = {
+            module
+                .type_store
+                .handle_of_ident(ident)
+                .ok()
+                .and_then(|type_handle| module.type_store.span_of(&type_handle))
+        };
+
+        let function_def_span = {
+            let function = module.module_scope.functions.get(&ident.inner);
+            if let Some(Function::UserDefined(f)) = function {
+                Some(f.span)
+            } else {
+                None
+            }
+        };
+
+        let dest_span = type_def_span.or(function_def_span)?;
+
+        Some(DefinitionLink::new(
+            ident.span.into_range(),
+            dest_span.into_range(),
+        ))
     }
 
     pub fn apply_document_changes(

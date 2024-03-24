@@ -25,13 +25,13 @@ impl SymbolProvider for TrackedDocument {
             .into_iter()
             .filter_map(|Spanned { span, inner }| match inner {
                 Declaration::Variable(v) => {
-                    Some(v.into_document_symbol(&self.lsp_doc.text, span.into()))
+                    Some(v.into_document_symbol(&self.lsp_doc.text, &span.into()))
                 }
                 Declaration::Struct(s) => {
-                    Some(s.into_document_symbol(&self.lsp_doc.text, span.into()))
+                    Some(s.into_document_symbol(&self.lsp_doc.text, &span.into()))
                 }
                 Declaration::Function(f) => {
-                    Some(f.into_document_symbol(&self.lsp_doc.text, span.into()))
+                    Some(f.into_document_symbol(&self.lsp_doc.text, &span.into()))
                 }
                 _ => None,
             })
@@ -40,18 +40,18 @@ impl SymbolProvider for TrackedDocument {
 }
 
 pub trait IntoDocumentSymbol {
-    fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol;
+    fn into_document_symbol(self, source: &str, span: &Range<usize>) -> DocumentSymbol;
 }
 
 impl IntoDocumentSymbol for Function {
     #[allow(deprecated)]
-    fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
+    fn into_document_symbol(self, source: &str, span: &Range<usize>) -> DocumentSymbol {
         DocumentSymbol {
             name: self.ident.inner,
             kind: SymbolKind::Function,
             detail: None,
             range: lsp_range_from_char_span(source, span),
-            selection_range: lsp_range_from_char_span(source, self.ident.span.into()),
+            selection_range: lsp_range_from_char_span(source, &self.ident.span.into()),
             children: None,
             tags: None,
             deprecated: None,
@@ -61,7 +61,7 @@ impl IntoDocumentSymbol for Function {
 
 impl IntoDocumentSymbol for StructMember {
     #[allow(deprecated)]
-    fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
+    fn into_document_symbol(self, source: &str, span: &Range<usize>) -> DocumentSymbol {
         DocumentSymbol {
             name: self.ident.inner,
             kind: SymbolKind::Field,
@@ -70,20 +70,20 @@ impl IntoDocumentSymbol for StructMember {
             children: None,
             deprecated: None,
             tags: None,
-            selection_range: lsp_range_from_char_span(source, self.ident.span.into()),
+            selection_range: lsp_range_from_char_span(source, &self.ident.span.into()),
         }
     }
 }
 
 impl IntoDocumentSymbol for Struct {
     #[allow(deprecated)]
-    fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
+    fn into_document_symbol(self, source: &str, span: &Range<usize>) -> DocumentSymbol {
         let members = self.members.clone();
 
         let children = Some(
             members
                 .into_iter()
-                .map(|s| s.inner.into_document_symbol(source, s.span.into()))
+                .map(|s| s.inner.into_document_symbol(source, &s.span.into()))
                 .collect(),
         );
 
@@ -92,7 +92,7 @@ impl IntoDocumentSymbol for Struct {
             kind: SymbolKind::Struct,
             detail: None,
             range: lsp_range_from_char_span(source, span),
-            selection_range: lsp_range_from_char_span(source, self.ident.span.into()),
+            selection_range: lsp_range_from_char_span(source, &self.ident.span.into()),
             children,
             deprecated: None,
             tags: None,
@@ -102,13 +102,13 @@ impl IntoDocumentSymbol for Struct {
 
 impl IntoDocumentSymbol for Variable {
     #[allow(deprecated)]
-    fn into_document_symbol(self, source: &str, span: Range<usize>) -> DocumentSymbol {
+    fn into_document_symbol(self, source: &str, span: &Range<usize>) -> DocumentSymbol {
         DocumentSymbol {
             name: self.ident.0.as_inner().clone(),
             kind: SymbolKind::Variable,
             detail: self.ident.1.as_ref().map(|ty| source[ty].to_owned()),
             range: lsp_range_from_char_span(source, span),
-            selection_range: lsp_range_from_char_span(source, self.ident.span.into()),
+            selection_range: lsp_range_from_char_span(source, &self.ident.span.into()),
             children: None,
             deprecated: None,
             tags: None,
