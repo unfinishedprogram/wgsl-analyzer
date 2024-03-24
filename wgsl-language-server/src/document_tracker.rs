@@ -4,42 +4,13 @@ use lsp_types::{
     DidChangeTextDocumentParams, DocumentSymbol, Position, PublishDiagnosticsParams,
     TextDocumentItem, Url,
 };
-use wgsl_ast::module::{declaration::function::Function, Module};
+use wgsl_ast::module::declaration::function::Function;
 
 use crate::{
-    diagnostic::wgsl_error_to_lsp_diagnostic,
     range_tools::{new_location_link, string_offset, string_range},
-    // completion_provider::CompletionProvider,
     symbol_provider::SymbolProvider,
+    tracked_document::TrackedDocument,
 };
-
-pub struct TrackedDocument {
-    pub uri: Url,
-    pub content: String,
-    pub version: i32,
-    pub compilation_result: Option<Result<Module, Vec<wgsl_ast::diagnostic::Diagnostic>>>,
-    pub last_valid_module: Option<Module>,
-}
-
-impl TrackedDocument {
-    pub fn compile_module(&mut self) {
-        let result = wgsl_ast::module::Module::from_source(&self.content);
-        _ = self.compilation_result.insert(result);
-    }
-
-    pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
-        let diagnostics = match &self.compilation_result {
-            Some(Ok(module)) => &module.diagnostics,
-            Some(Err(diagnostics)) => diagnostics,
-            None => return vec![],
-        };
-
-        diagnostics
-            .iter()
-            .map(|d| wgsl_error_to_lsp_diagnostic(self.uri.clone(), &self.content, d))
-            .collect()
-    }
-}
 
 #[derive(Default)]
 pub struct DocumentTracker {
@@ -47,27 +18,21 @@ pub struct DocumentTracker {
 }
 
 impl DocumentTracker {
-    pub fn insert(&mut self, doc: TextDocumentItem) {
-        let document = TrackedDocument {
-            uri: doc.uri.to_owned(),
-            content: doc.text.clone(),
-            version: doc.version,
-            compilation_result: None,
-            last_valid_module: None,
-        };
-
-        self.documents.insert(doc.uri.clone(), document);
-        self.documents.get_mut(&doc.uri).unwrap().compile_module();
+    pub fn insert(&mut self, document: TextDocumentItem) {
+        let mut document: TrackedDocument = document.into();
+        document.compile_module();
+        self.documents
+            .insert(document.lsp_doc.uri.clone(), document);
     }
 
-    pub fn update(&mut self, change: DidChangeTextDocumentParams) {
+    pub fn apply_document_update(&mut self, change: DidChangeTextDocumentParams) {
         if let Some(doc) = self.documents.get_mut(&change.text_document.uri) {
             for change in change.content_changes {
                 if let Some(range) = change.range {
-                    let range = string_range(&doc.content, &range);
-                    doc.content.replace_range(range, &change.text);
+                    let range = string_range(&doc.lsp_doc.text, &range);
+                    doc.lsp_doc.text.replace_range(range, &change.text);
                 } else {
-                    doc.content = change.text;
+                    doc.lsp_doc.text = change.text;
                 }
             }
             doc.compile_module();

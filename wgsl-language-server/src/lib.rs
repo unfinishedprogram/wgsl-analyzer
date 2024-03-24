@@ -2,6 +2,7 @@ mod diagnostic;
 mod document_tracker;
 mod range_tools;
 mod symbol_provider;
+mod tracked_document;
 
 use document_tracker::DocumentTracker;
 
@@ -75,7 +76,7 @@ impl WGSLLanguageServer {
             }
             "textDocument/didChange" => {
                 let params: DidChangeTextDocumentParams = from_value(params).unwrap();
-                self.documents.update(params);
+                self.documents.apply_document_update(params);
                 self.update_diagnostics();
             }
             "textDocument/didSave" => {}

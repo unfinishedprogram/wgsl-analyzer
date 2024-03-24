@@ -6,7 +6,7 @@ use wgsl_ast::front::{
     span::{Spanned, WithSpan},
 };
 
-use crate::{document_tracker::TrackedDocument, range_tools::lsp_range_from_char_span};
+use crate::{range_tools::lsp_range_from_char_span, tracked_document::TrackedDocument};
 
 pub trait SymbolProvider {
     fn get_symbols(&self) -> Vec<DocumentSymbol>;
@@ -25,11 +25,13 @@ impl SymbolProvider for TrackedDocument {
             .into_iter()
             .filter_map(|Spanned { span, inner }| match inner {
                 Declaration::Variable(v) => {
-                    Some(v.into_document_symbol(&self.content, span.into()))
+                    Some(v.into_document_symbol(&self.lsp_doc.text, span.into()))
                 }
-                Declaration::Struct(s) => Some(s.into_document_symbol(&self.content, span.into())),
+                Declaration::Struct(s) => {
+                    Some(s.into_document_symbol(&self.lsp_doc.text, span.into()))
+                }
                 Declaration::Function(f) => {
-                    Some(f.into_document_symbol(&self.content, span.into()))
+                    Some(f.into_document_symbol(&self.lsp_doc.text, span.into()))
                 }
                 _ => None,
             })
