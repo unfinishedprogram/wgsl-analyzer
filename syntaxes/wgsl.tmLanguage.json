@@ -231,7 +231,7 @@
 				{
 					"comment": "scalar Types",
 					"name": "storage.type.wgsl",
-					"match": "\\b(bool|i32|u32|f32)\\b"
+					"match": "\\b(bool|[i|u|f]32|f16)\\b"
 				},
 				{
 					"comment": "reserved scalar Types",
@@ -265,7 +265,7 @@
 				{
 					"comment": "variables",
 					"name": "variable.other.wgsl",
-					"match": "\\b(?<!(?<!\\.)\\.)(?:r#(?!(crate|[Ss]elf|super)))?[a-z0-9_]+\\b"
+					"match": "\\b(?<!(?<!\\.)\\.)[a-z0-9_]+\\b"
 				}
 			]
 		},
@@ -321,14 +321,9 @@
 					"match": "\\b(let|var)\\b"
 				},
 				{
-					"comment": "type keyword",
-					"name": "keyword.declaration.type.wgsl storage.type.wgsl",
-					"match": "\\b(type)\\b"
-				},
-				{
-					"comment": "enum keyword",
-					"name": "keyword.declaration.enum.wgsl storage.type.wgsl",
-					"match": "\\b(enum)\\b"
+					"comment": "alias keyword",
+					"name": "keyword.declaration.alias.wgsl storage.type.wgsl",
+					"match": "\\b(alias)\\b"
 				},
 				{
 					"comment": "struct keyword",
@@ -344,11 +339,6 @@
 					"comment": "logical operators",
 					"name": "keyword.operator.logical.wgsl",
 					"match": "(\\^|\\||\\|\\||&&|<<|>>|!)(?!=)"
-				},
-				{
-					"comment": "logical AND, borrow references",
-					"name": "keyword.operator.borrow.and.wgsl",
-					"match": "&(?![&=])"
 				},
 				{
 					"comment": "assignment operators",
