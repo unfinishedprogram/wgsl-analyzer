@@ -241,7 +241,7 @@
 				{
 					"comment": "vector/matrix types",
 					"name": "storage.type.wgsl",
-					"match": "\\b(vec[2-4]|mat[2-4]x[2-4])\\b"
+					"match": "\\b(vec[2-4](f|h|i|u)?|mat[2-4]x[2-4](f|h)?)\\b"
 				},
 				{
 					"comment": "atomic types",
