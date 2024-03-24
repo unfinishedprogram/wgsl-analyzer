@@ -76,7 +76,7 @@ impl WGSLLanguageServer {
             }
             "textDocument/didChange" => {
                 let params: DidChangeTextDocumentParams = from_value(params).unwrap();
-                self.documents.apply_document_update(params);
+                self.documents.handle_change_text_document(params);
                 self.update_diagnostics();
             }
             "textDocument/didSave" => {}

@@ -7,7 +7,7 @@ use lsp_types::{
 use wgsl_ast::module::declaration::function::Function;
 
 use crate::{
-    range_tools::{new_location_link, string_offset, string_range},
+    range_tools::{new_location_link, string_offset},
     symbol_provider::SymbolProvider,
     tracked_document::TrackedDocument,
 };
@@ -21,21 +21,12 @@ impl DocumentTracker {
     pub fn insert(&mut self, document: TextDocumentItem) {
         let mut document: TrackedDocument = document.into();
         document.compile_module();
-        self.documents
-            .insert(document.lsp_doc.uri.clone(), document);
+        self.documents.insert(document.uri().clone(), document);
     }
 
-    pub fn apply_document_update(&mut self, change: DidChangeTextDocumentParams) {
+    pub fn handle_change_text_document(&mut self, change: DidChangeTextDocumentParams) {
         if let Some(doc) = self.documents.get_mut(&change.text_document.uri) {
-            for change in change.content_changes {
-                if let Some(range) = change.range {
-                    let range = string_range(&doc.lsp_doc.text, &range);
-                    doc.lsp_doc.text.replace_range(range, &change.text);
-                } else {
-                    doc.lsp_doc.text = change.text;
-                }
-            }
-            doc.compile_module();
+            doc.apply_document_changes(&change.content_changes);
         }
     }
 
