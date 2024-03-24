@@ -1,5 +1,6 @@
 mod diagnostic;
 mod document_tracker;
+pub mod find_definition;
 mod range_tools;
 mod symbol_provider;
 mod tracked_document;

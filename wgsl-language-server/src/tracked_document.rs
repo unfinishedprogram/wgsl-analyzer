@@ -3,7 +3,8 @@ use wgsl_ast::module::{declaration::function::Function, Module};
 
 use crate::{
     diagnostic::wgsl_error_to_lsp_diagnostic,
-    range_tools::{string_offset, string_range, DefinitionLink},
+    find_definition::{DefinitionLocation, FindDefinitionResult},
+    range_tools::{string_offset, string_range},
 };
 
 pub struct TrackedDocument {
@@ -41,7 +42,7 @@ impl TrackedDocument {
             .collect()
     }
 
-    pub fn get_definition(&self, position: &Position) -> Option<DefinitionLink> {
+    pub fn get_definition(&self, position: &Position) -> Option<FindDefinitionResult> {
         let Some(Ok(module)) = &self.compilation_result else {
             return None;
         };
@@ -49,28 +50,32 @@ impl TrackedDocument {
         let ident = module.ident_at_position(&string_offset(&module.source, position))?;
         // Search in types
 
-        let type_def_span = {
+        let type_def_location = {
             module
                 .type_store
                 .handle_of_ident(ident)
                 .ok()
                 .and_then(|type_handle| module.type_store.span_of(&type_handle))
+                .map(|span| DefinitionLocation::from_range(span.into()))
         };
 
-        let function_def_span = {
+        let function_def_location = {
             let function = module.module_scope.functions.get(&ident.inner);
             if let Some(Function::UserDefined(f)) = function {
-                Some(f.span)
+                Some(DefinitionLocation::new(
+                    f.ident.span.into_range(),
+                    f.span.into(),
+                ))
             } else {
                 None
             }
         };
 
-        let dest_span = type_def_span.or(function_def_span)?;
+        let def_location = type_def_location.or(function_def_location)?;
 
-        Some(DefinitionLink::new(
+        Some(FindDefinitionResult::new(
             ident.span.into_range(),
-            dest_span.into_range(),
+            def_location,
         ))
     }
 
