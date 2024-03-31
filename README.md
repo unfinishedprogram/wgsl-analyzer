@@ -1,6 +1,6 @@
 # WGSL-Analyzer
 
-![alt text](media/banner.svg)
+![wgsl-analyzer banner](media/banner.svg)
 
 > A VSCode extension providing validation and syntax highlighting of wgsl files
 
