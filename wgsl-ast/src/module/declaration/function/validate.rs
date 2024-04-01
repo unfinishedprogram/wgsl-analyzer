@@ -8,7 +8,7 @@ use crate::{
 };
 
 impl Function {
-    pub fn validate(
+    pub fn validate_body(
         &self,
         module_scope: &ModuleScope,
         type_store: &TypeStore,

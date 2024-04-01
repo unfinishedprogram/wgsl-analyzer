@@ -5,10 +5,7 @@ use chumsky::span::SimpleSpan;
 use crate::{
     diagnostic::Diagnostic,
     front::{
-        ast::{
-            expression::{TemplateElaboratedIdent, TemplateList},
-            statement::declaration::Declaration,
-        },
+        ast::{expression::TemplateElaboratedIdent, statement::declaration::Declaration},
         span::{SpanAble, Spanned, WithSpan},
     },
     module::declaration::r#type::generator::TypeGenerator,

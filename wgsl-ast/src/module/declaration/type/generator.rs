@@ -239,7 +239,7 @@ impl TypeGenerator {
             TypeGenerator::Vec2 | TypeGenerator::Vec3 | TypeGenerator::Vec4 => {
                 let ident = expect_ident(&args[0])?;
 
-                let component_handle = store.type_of_ident(&ident)?;
+                let component_handle = store.type_of_ident(ident)?;
                 let component_type = store.types.get(&component_handle);
 
                 let scalar_type = match component_type {
