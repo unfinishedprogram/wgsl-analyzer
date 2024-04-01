@@ -6,7 +6,7 @@ use crate::{
     diagnostic::Diagnostic,
     front::{
         ast::{
-            expression::{ExpressionInner, TemplateElaboratedIdent, TemplateList},
+            expression::{TemplateElaboratedIdent, TemplateList},
             statement::declaration::Declaration,
         },
         span::{SpanAble, Spanned, WithSpan},
@@ -252,43 +252,11 @@ impl TypeStore {
         )
     }
 
-    pub fn template_list_to_ident(
-        &self,
-        list: Option<TemplateList>,
-    ) -> Result<Vec<Spanned<TemplateElaboratedIdent>>, Vec<Diagnostic>> {
-        let Some(list) = list else {
-            return Ok(vec![]);
-        };
-
-        let mut diagnostics = vec![];
-        let mut identifiers = vec![];
-
-        for expr in list.0 {
-            let span = expr.span();
-            match expr.inner() {
-                ExpressionInner::Ident(ident) => identifiers.push(ident),
-                _ => {
-                    diagnostics.push(
-                        Diagnostic::error("Only identifiers are allowed in template arguments")
-                            .span(span),
-                    );
-                }
-            }
-        }
-
-        if diagnostics.is_empty() {
-            Ok(identifiers)
-        } else {
-            Err(diagnostics)
-        }
-    }
-
     pub fn apply_template_args(
         &mut self,
         handle: Handle<Type>,
         ident: &Spanned<TemplateElaboratedIdent>,
     ) -> Result<Handle<Type>, Vec<Diagnostic>> {
-        log::warn!("Applying template args");
         let inner_type = self.apply_template_args_inner(handle, ident)?;
         Ok(self.types.insert(inner_type))
     }
@@ -318,13 +286,11 @@ impl TypeStore {
                 None => Ok(ty.clone()),
             },
             Type::Generator(gen) => {
-                let as_identifiers = self.template_list_to_ident(args)?;
-                let applied =
-                    gen.apply_template_args(self, as_identifiers)
-                        .map_err(|mut err| {
-                            err[0] = err[0].clone().span_if_none(ident.span());
-                            err
-                        })?;
+                let args = args.unwrap_or_default();
+                let applied = gen.apply_template_args(self, args).map_err(|mut err| {
+                    err[0] = err[0].clone().span_if_none(ident.span());
+                    err
+                })?;
                 Ok(applied)
             }
         }

@@ -29,7 +29,7 @@ pub struct ComponentOrSwizzleSpecifier(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateElaboratedIdent(pub Spanned<String>, pub Option<TemplateList>);
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TemplateList(pub Vec<Expression>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]

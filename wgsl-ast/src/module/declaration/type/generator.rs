@@ -1,8 +1,9 @@
 use crate::{
     diagnostic::Diagnostic,
     front::{
-        ast::expression::TemplateElaboratedIdent,
+        ast::expression::{Expression, ExpressionInner, TemplateElaboratedIdent, TemplateList},
         span::{Spanned, WithSpan},
+        token::Literal,
     },
     module::{store::Store, type_store::TypeStore},
 };
@@ -37,6 +38,13 @@ pub enum TypeGenerator {
     Vec2,
     Vec3,
     Vec4,
+}
+
+fn expect_ident(expr: &Expression) -> Result<&Spanned<TemplateElaboratedIdent>, Diagnostic> {
+    match expr.as_inner() {
+        ExpressionInner::Ident(ident) => Ok(ident),
+        _ => Err(Diagnostic::error("Expected an identifier").span(expr.span())),
+    }
 }
 
 impl TypeGenerator {
@@ -101,12 +109,8 @@ impl TypeGenerator {
         }
     }
 
-    fn validate_arg_count(
-        &self,
-        args: &[Spanned<TemplateElaboratedIdent>],
-    ) -> Result<(), Diagnostic> {
+    fn validate_arg_count(&self, count: usize) -> Result<(), Diagnostic> {
         let (min, max) = self.valid_arg_count_range();
-        let count = args.len();
 
         if count < min {
             return Err(Diagnostic::error(format!(
@@ -127,22 +131,45 @@ impl TypeGenerator {
     pub fn apply_template_args(
         &self,
         store: &mut TypeStore,
-        args: Vec<Spanned<TemplateElaboratedIdent>>,
+        args: TemplateList,
     ) -> Result<Type, Vec<Diagnostic>> {
-        self.validate_arg_count(&args)?;
+        let args = args.0;
+        self.validate_arg_count(args.len())?;
 
-        // let mut diagnostics: Vec<Diagnostic> = Vec::new();
+        fn not_implemented() -> Result<Type, Vec<Diagnostic>> {
+            Err(vec![Diagnostic::error("Not implemented")])
+        }
 
         match self {
             TypeGenerator::Array => {
-                // TODO: Implement fixed size arrays
-                let content_type = store.type_of_ident(&args[0])?;
+                let content_type = if let ExpressionInner::Ident(ident) = &args[0].inner {
+                    store.type_of_ident(ident)?
+                } else {
+                    return Err(vec![Diagnostic::error(
+                        "Array type specifier must be an identifier",
+                    )
+                    .span(args[0].span())]);
+                };
+
+                let array_length = if let Some(arg) = args.get(1) {
+                    match arg.as_inner() {
+                        ExpressionInner::Literal(Literal::Int(int)) => Some(int.clone()),
+                        // TODO: Constant evaluation
+                        _ => return Err(vec![Diagnostic::error(
+                            "Invalid array length specifier. Array length must evaluate to a constant of type i32 or u32",
+                        )
+                        .span(arg.span())]),
+                    }
+                } else {
+                    None
+                };
+
                 Ok(Type::Plain(
-                    crate::module::declaration::r#type::Plain::Array(content_type, None),
+                    crate::module::declaration::r#type::Plain::Array(content_type, array_length),
                 ))
             }
             TypeGenerator::Atomic => {
-                let content_type = store.type_of_ident(&args[0])?;
+                let content_type = store.type_of_ident(expect_ident(&args[0])?)?;
                 let content_type = store.types.get(&content_type);
                 match content_type {
                     Type::Plain(Plain::Scalar(scalar))
@@ -167,7 +194,7 @@ impl TypeGenerator {
             | TypeGenerator::Mat4x2
             | TypeGenerator::Mat4x3
             | TypeGenerator::Mat4x4 => {
-                let content_type = store.type_of_ident(&args[0])?;
+                let content_type = store.type_of_ident(expect_ident(&args[0])?)?;
                 let content_type = store.types.get(&content_type);
 
                 let scalar_type = match content_type {
@@ -197,20 +224,22 @@ impl TypeGenerator {
 
                 Ok(Type::Plain(Plain::Mat(res)))
             }
-            TypeGenerator::Ptr => todo!(),
-            TypeGenerator::Texture1D => todo!(),
-            TypeGenerator::Texture2D => todo!(),
-            TypeGenerator::Texture2DArray => todo!(),
-            TypeGenerator::Texture3D => todo!(),
-            TypeGenerator::TextureCube => todo!(),
-            TypeGenerator::TextureCubeArray => todo!(),
-            TypeGenerator::TextureMultisampled2D => todo!(),
-            TypeGenerator::TextureDepthMultisampled2D => todo!(),
-            TypeGenerator::TextureStorage2D => todo!(),
-            TypeGenerator::TextureStorage2DArray => todo!(),
-            TypeGenerator::TextureStorage3D => todo!(),
+            TypeGenerator::Ptr => not_implemented(),
+            TypeGenerator::Texture1D => not_implemented(),
+            TypeGenerator::Texture2D => not_implemented(),
+            TypeGenerator::Texture2DArray => not_implemented(),
+            TypeGenerator::Texture3D => not_implemented(),
+            TypeGenerator::TextureCube => not_implemented(),
+            TypeGenerator::TextureCubeArray => not_implemented(),
+            TypeGenerator::TextureMultisampled2D => not_implemented(),
+            TypeGenerator::TextureDepthMultisampled2D => not_implemented(),
+            TypeGenerator::TextureStorage2D => not_implemented(),
+            TypeGenerator::TextureStorage2DArray => not_implemented(),
+            TypeGenerator::TextureStorage3D => not_implemented(),
             TypeGenerator::Vec2 | TypeGenerator::Vec3 | TypeGenerator::Vec4 => {
-                let component_handle = store.type_of_ident(&args[0])?;
+                let ident = expect_ident(&args[0])?;
+
+                let component_handle = store.type_of_ident(&ident)?;
                 let component_type = store.types.get(&component_handle);
 
                 let scalar_type = match component_type {
@@ -218,7 +247,7 @@ impl TypeGenerator {
                     _ => Err(vec![Diagnostic::error(
                         "Invalid component type. Vector components must be of scalar types",
                     )
-                    .span(args[0].span())]),
+                    .span(ident.span())]),
                 }?;
 
                 let res = match self {

@@ -25,7 +25,8 @@ pub enum Type {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Plain {
     Scalar(Scalar),
-    Array(Handle<Type>, Option<u32>),
+    // TODO: Use int literal type for arr len
+    Array(Handle<Type>, Option<String>),
     Struct(Struct),
     Mat(Mat),
     Vec(VecType),
