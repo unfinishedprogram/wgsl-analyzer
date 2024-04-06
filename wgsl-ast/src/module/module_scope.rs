@@ -56,25 +56,4 @@ impl ModuleScope {
 
         Ok(())
     }
-
-    pub fn validate_functions(
-        &mut self,
-        type_store: &mut TypeStore,
-    ) -> Result<(), Vec<Diagnostic>> {
-        // We have to collect keys otherwise this is an immutable borrow on the hashmap, so we wouldn't be able to update the value
-        let keys: Vec<_> = self.functions.keys().cloned().collect();
-
-        for key in keys {
-            let function = self.functions.get(&key).unwrap();
-            if let Function::UserDefined(function) = function {
-                let res = function.inner.validate(self, type_store)?;
-
-                if let Some(Function::UserDefined(function)) = self.functions.get_mut(&key) {
-                    function.inner.body = res;
-                }
-            }
-        }
-
-        Ok(())
-    }
 }

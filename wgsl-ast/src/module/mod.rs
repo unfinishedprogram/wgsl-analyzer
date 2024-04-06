@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     diagnostic::{Diagnostic, DiagnosticSource},
     front::{
@@ -11,7 +13,16 @@ use crate::{
     },
 };
 
-use self::{module_scope::ModuleScope, type_store::TypeStore};
+use self::{
+    declaration::function::{
+        scope::{Scope, ScopeStore},
+        validate::ValidationContext,
+        Function, FunctionBody,
+    },
+    module_scope::ModuleScope,
+    store::handle::Handle,
+    type_store::TypeStore,
+};
 
 pub mod declaration;
 mod module_scope;
@@ -28,6 +39,7 @@ pub struct Module {
     pub ast: Vec<Spanned<Statement>>,
     pub module_scope: ModuleScope,
     pub type_store: TypeStore,
+    pub scope_store: ScopeStore,
     pub identifiers: Vec<Spanned<String>>,
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -36,6 +48,7 @@ pub struct Module {
 impl Module {
     pub fn from_ast(ast: Ast, source: String) -> Result<Self, Vec<Diagnostic>> {
         let mut diagnostics: Vec<Diagnostic> = vec![];
+        let mut scope_store: ScopeStore = ScopeStore::default();
 
         if !ast.errors.is_empty() {
             let errors = ast.errors.iter().map(Diagnostic::from).collect();
@@ -51,7 +64,7 @@ impl Module {
         // Inserts types,
         // All types must be declared at module scope
         type_store
-            .insert_declarations(&declarations)
+            .insert_type_declarations(&declarations)
             .extend(&mut diagnostics);
 
         module_scope
@@ -60,11 +73,42 @@ impl Module {
 
         // Inserts user-declared functions
         // All user-defined functions must be defined at module scope
+        let functions: Vec<_> = ast.function_declarations().collect();
+        module_scope
+            .insert_function_declarations(&mut type_store, &functions)
+            .extend(&mut diagnostics);
+
         {
-            let functions: Vec<_> = ast.function_declarations().collect();
-            module_scope
-                .insert_function_declarations(&mut type_store, &functions)
-                .extend(&mut diagnostics);
+            let mut validated_functions: HashMap<String, Handle<Scope>> = Default::default();
+
+            for (key, function) in module_scope.functions.iter() {
+                if let Function::UserDefined(function) = function {
+                    let function_scope = scope_store.insert_child(scope_store.root());
+                    let res = {
+                        let mut ctx = ValidationContext::new(
+                            &mut scope_store,
+                            function_scope,
+                            &type_store,
+                            &module_scope,
+                        );
+                        ctx.validate_user_defined_function(function)
+                    };
+
+                    match res {
+                        Ok(scope) => {
+                            validated_functions.insert(key.clone(), scope);
+                        }
+                        Err(diagnostic) => diagnostics.push(diagnostic),
+                    };
+                }
+            }
+
+            for (key, scope) in validated_functions {
+                if let Some(Function::UserDefined(function)) = module_scope.functions.get_mut(&key)
+                {
+                    function.inner.body = FunctionBody::Validated(scope);
+                }
+            }
         }
 
         // We use this list of identifiers, to enable Ident picking/autocompletion in IDE
@@ -77,10 +121,6 @@ impl Module {
             })
             .collect();
 
-        module_scope
-            .validate_functions(&mut type_store)
-            .extend(&mut diagnostics);
-
         Ok(Self {
             source,
             ast: ast.statements,
@@ -88,6 +128,7 @@ impl Module {
             type_store,
             identifiers,
             diagnostics,
+            scope_store,
         })
     }
 

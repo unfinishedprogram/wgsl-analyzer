@@ -1,8 +1,8 @@
-mod builtin;
-mod scope;
+pub mod builtin;
+pub mod scope;
 pub mod validate;
 
-use self::{builtin::Builtin, scope::ScopeStore};
+use self::{builtin::Builtin, scope::Scope};
 
 use super::r#type::Type;
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     module::{store::handle::Handle, type_store::TypeStore},
 };
 pub enum FunctionBody {
-    Validated(ScopeStore),
+    Validated(Handle<Scope>),
     Unprocessed(Vec<Spanned<Statement>>),
 }
 

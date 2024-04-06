@@ -99,7 +99,7 @@ impl TypeStore {
         }
     }
 
-    pub fn insert_declarations(
+    pub fn insert_type_declarations(
         &mut self,
         declarations: &[Spanned<Declaration>],
     ) -> Result<(), Vec<Diagnostic>> {
