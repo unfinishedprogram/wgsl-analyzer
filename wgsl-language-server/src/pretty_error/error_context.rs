@@ -12,15 +12,17 @@ use naga::{
 };
 use type_print::TypePrintable;
 
-use super::label_tools::{AsRange, LabelAppend};
+use super::label_tools::{label_primary, AsRange, LabelAppend};
 
 pub struct ErrorContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
 }
 
-fn label_primary(span: &impl AsRange, msg: impl Into<String>) -> Label<()> {
-    Label::primary((), span.get_range()).with_message(msg)
+macro_rules! label {
+    ($span:expr, $($arg:tt)*) => {
+        label_primary($span, format!($($arg)*))
+    }
 }
 
 impl<'a> ErrorContext<'a> {
@@ -35,8 +37,7 @@ impl<'a> ErrorContext<'a> {
                 name,
                 source,
             } => self.function_error_diagnostic(
-                Diagnostic::error()
-                    .with_label(label_primary(error, format!("Function {name} is invalid"))),
+                Diagnostic::error().with_label(label!(error, "Function {name} is invalid")),
                 *handle,
                 source,
             ),
@@ -70,18 +71,20 @@ impl<'a> ErrorContext<'a> {
             FunctionError::InvalidReturnType(return_expr) => if let Some(expr_handle) = return_expr
             {
                 let return_span = func.expressions.get_span(*expr_handle);
-                diagnostic.with_label(label_primary(
+                diagnostic.with_label(label!(
                     &return_span,
-                    format!(
-                        "Expression of type {} returned",
-                        self.type_of_expression_str(handle, *expr_handle)
-                    ),
+                    "Expression of type `{}` returned",
+                    self.type_of_expression_str(handle, *expr_handle)
                 ))
             } else {
-                diagnostic
+                diagnostic.with_label(label!(
+                    &self.module.functions.get_span(handle),
+                    "Function does not always return a value",
+                ))
             }
-            .with_message(format!(
-                "Expected function {} to return {}",
+            .with_label(label!(
+                &self.module.functions.get_span(handle),
+                "Expected function `{}` to return type `{}`",
                 func.name.clone().unwrap_or_default(),
                 func.result
                     .as_ref()

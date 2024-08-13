@@ -35,3 +35,7 @@ impl LabelAppend for codespan_reporting::diagnostic::Diagnostic<()> {
         self.with_labels(vec![label])
     }
 }
+
+pub fn label_primary(span: &impl AsRange, msg: impl Into<String>) -> Label<()> {
+    Label::primary((), span.get_range()).with_message(msg)
+}
