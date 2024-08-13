@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use codespan_reporting::diagnostic::Diagnostic;
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
     PublishDiagnosticsParams, TextDocumentItem, Url,
 };
 use naga::{
     front::wgsl::ParseError,
-    valid::{Capabilities, ModuleInfo, ValidationFlags, Validator},
+    valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
     Module,
 };
 
@@ -15,7 +14,7 @@ use crate::{
     completion_provider::CompletionProvider,
     range_tools::string_range,
     symbol_provider::SymbolProvider,
-    wgsl_error::{codespan_to_lsp_diagnostic, parse_error_to_lsp_diagnostic},
+    wgsl_error::{parse_error_to_lsp_diagnostic, validation_error_to_lsp_diagnostic},
 };
 
 pub struct TrackedDocument {
@@ -26,7 +25,8 @@ pub struct TrackedDocument {
     pub last_valid_module: Option<Module>,
 }
 
-type CompilationResult = Result<(Module, Result<ModuleInfo, Diagnostic<()>>), ParseError>;
+type CompilationResult =
+    Result<(Module, Result<ModuleInfo, naga::WithSpan<ValidationError>>), ParseError>;
 
 impl TrackedDocument {
     pub fn compile_module(&mut self, validator: &mut Validator) -> &CompilationResult {
@@ -35,7 +35,7 @@ impl TrackedDocument {
             Err(parse_error) => Err(parse_error),
             Ok(module) => {
                 self.last_valid_module = Some(module.clone());
-                let validation_result = validator.validate(&module, self.content.to_owned());
+                let validation_result = validator.validate(&module);
                 Ok((module, validation_result))
             }
         };
@@ -54,11 +54,11 @@ impl TrackedDocument {
                 &self.content,
                 &self.uri,
             )),
-            Ok((_, Err(validation_error))) => Some(codespan_to_lsp_diagnostic(
-                validation_error.clone(),
-                None,
-                &self.uri,
+            Ok((module, Err(validation_error))) => Some(validation_error_to_lsp_diagnostic(
+                validation_error,
                 &self.content,
+                &self.uri,
+                module,
             )),
             _ => None,
         }

@@ -1,4 +1,4 @@
-use naga::{FunctionResult, Handle, ScalarKind, Type, TypeInner};
+use naga::{FunctionResult, Handle, Scalar, ScalarKind, Type, TypeInner};
 
 use super::LabelContext;
 
@@ -36,29 +36,35 @@ impl TypePrintable for TypeInner {
                 ScalarKind::Uint => format!("u{}", width * 8),
                 ScalarKind::Float => format!("f{}", width * 8),
                 ScalarKind::Bool => "bool".into(),
+                ScalarKind::AbstractFloat => "AbstractFloat".into(),
+                ScalarKind::AbstractInt => "AbstractInt".into(),
             }
         }
         match self {
-            TypeInner::Scalar { kind, width } => print_scalar(kind, *width),
-            TypeInner::Vector { size, kind, width } => {
+            TypeInner::Scalar(Scalar { kind, width }) => print_scalar(kind, *width),
+            TypeInner::Vector {
+                size,
+                scalar: Scalar { kind, width },
+            } => {
                 format!("vec{}<{}>", *size as u8, print_scalar(kind, *width))
             }
             TypeInner::Matrix {
                 columns,
                 rows,
-                width,
+                scalar: Scalar { kind, width },
             } => {
                 format!("mat{}x{}<{}>", *columns as u8, *rows as u8, width * 8)
             }
-            TypeInner::Atomic { kind, width } => format!("Atomic<{}>", print_scalar(kind, *width)),
+            TypeInner::Atomic(Scalar { kind, width }) => {
+                format!("Atomic<{}>", print_scalar(kind, *width))
+            }
             TypeInner::Pointer { base, space } => {
                 format!("ptr<{space:?}, {}>", base.print_type(context))
             }
             TypeInner::ValuePointer {
                 size,
-                kind,
-                width,
                 space,
+                scalar: Scalar { kind, width },
             } => format!("ptr<{space:?}, {}>", print_scalar(kind, *width)),
             TypeInner::Array { base, size, stride } => match size {
                 naga::ArraySize::Constant(s) => format!("Array<{}, {s}>", base.print_type(context)),

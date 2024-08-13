@@ -7,7 +7,7 @@ use super::{span_priovider::SpanProvider, ErrorContext, LabelContext};
 pub trait CodeProvider<T>: SpanProvider<T> {
     fn code(&self) -> &str;
     fn code_span(&self, handle: Handle<T>) -> &str {
-        &self.code()[self.get_span(handle).as_range()]
+        &self.code()[self.get_span(handle).get_range()]
     }
 }
 

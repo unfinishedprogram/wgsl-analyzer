@@ -1,8 +1,10 @@
+use codespan_reporting::diagnostic::{Diagnostic, LabelStyle};
 use lsp_types::{DiagnosticRelatedInformation, Url};
 use naga::{front::wgsl::ParseError, SourceLocation};
 
-use crate::range_tools::{
-    new_location, range_to_span, source_location_to_range, span_to_lsp_range,
+use crate::{
+    pretty_error::error_context::ErrorContext,
+    range_tools::{new_location, range_to_span, source_location_to_range, span_to_lsp_range},
 };
 
 pub fn codespan_to_lsp_diagnostic(
@@ -66,7 +68,49 @@ pub fn parse_error_to_lsp_diagnostic(
     src: &str,
     url: &lsp_types::Url,
 ) -> lsp_types::Diagnostic {
-    let diagnostic = err.diagnostic();
+    let labels = err
+        .labels()
+        .map(|(span, msg)| {
+            codespan_reporting::diagnostic::Label::new(
+                LabelStyle::Primary,
+                (),
+                span.to_range().unwrap(),
+            )
+            .with_message(msg)
+        })
+        .collect();
+
     let location = err.location(src);
+    let diagnostic = Diagnostic::error()
+        .with_labels(labels)
+        .with_message(err.message())
+        .with_notes(vec!["PARSE_ERROR".to_string()]);
+
     codespan_to_lsp_diagnostic(diagnostic, location, url, src)
+}
+
+pub fn validation_error_to_codespan_diagnostic(
+    err: &naga::WithSpan<naga::valid::ValidationError>,
+    src: &str,
+    module: &naga::Module,
+) -> codespan_reporting::diagnostic::Diagnostic<()> {
+    let ctx = ErrorContext::new(module, src);
+
+    ctx.validation_error_diagnostic(err)
+        .with_notes(vec!["VALIDATION_ERROR".to_string()])
+}
+
+pub fn validation_error_to_lsp_diagnostic(
+    err: &naga::WithSpan<naga::valid::ValidationError>,
+    src: &str,
+    url: &lsp_types::Url,
+    module: &naga::Module,
+) -> lsp_types::Diagnostic {
+    let location = err.location(src);
+    codespan_to_lsp_diagnostic(
+        validation_error_to_codespan_diagnostic(err, src, module),
+        location,
+        url,
+        src,
+    )
 }

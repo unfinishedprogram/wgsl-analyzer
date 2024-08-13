@@ -1,6 +1,7 @@
 mod completion_provider;
 mod document_tracker;
 mod parser;
+mod pretty_error;
 mod range_tools;
 mod symbol_provider;
 mod wgsl_error;

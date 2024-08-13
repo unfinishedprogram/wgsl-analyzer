@@ -23,3 +23,14 @@
 ## About
 
 This extension uses a forked version of [Naga](https://github.com/gfx-rs/naga) with improved diagnostic messages under the hood for validation.
+
+## Developing
+
+### Install pre-requisites
+```
+# Install wasm-pack from source
+cargo install wasm-pack
+
+# Install NPM deps 
+npm i
+```

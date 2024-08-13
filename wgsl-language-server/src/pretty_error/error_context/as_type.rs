@@ -1,6 +1,5 @@
-use naga::{Expression, Handle, ScalarKind, Type, TypeInner};
-
 use super::LabelContext;
+use naga::{Expression, Handle, Scalar, ScalarKind, Type, TypeInner};
 
 pub trait AsType {
     fn as_type(&self, context: &LabelContext) -> Type;
@@ -11,12 +10,8 @@ impl AsType for Handle<Expression> {
         fn scalar(kind: ScalarKind, width: u8) -> Type {
             Type {
                 name: None,
-                inner: TypeInner::Scalar { kind, width },
+                inner: TypeInner::Scalar(Scalar { kind, width }),
             }
-        }
-
-        fn from_inner(inner: TypeInner) -> Type {
-            Type { name: None, inner }
         }
 
         let expression = &context[*self];
@@ -27,20 +22,19 @@ impl AsType for Handle<Expression> {
                 naga::Literal::U32(_) => scalar(ScalarKind::Uint, 4),
                 naga::Literal::I32(_) => scalar(ScalarKind::Sint, 4),
                 naga::Literal::Bool(_) => scalar(ScalarKind::Bool, 0),
+                naga::Literal::U64(_) => scalar(ScalarKind::Uint, 8),
+                naga::Literal::I64(_) => scalar(ScalarKind::Sint, 8),
+                naga::Literal::AbstractInt(_) => scalar(ScalarKind::AbstractInt, 8),
+                naga::Literal::AbstractFloat(_) => scalar(ScalarKind::AbstractFloat, 8),
             },
-            Expression::Constant(handle) => match context[*handle].inner.resolve_type() {
-                naga::proc::TypeResolution::Handle(handle) => context[handle].clone(),
-                naga::proc::TypeResolution::Value(inner) => from_inner(inner),
-            },
+            Expression::Constant(handle) => context[context[*handle].ty].clone(),
             Expression::ZeroValue(handle) => context[*handle].clone(),
-
             Expression::Swizzle {
                 size: _,
                 vector,
                 pattern: _,
             } => vector.as_type(context),
             Expression::Compose { ty, components: _ } => context[*ty].clone(),
-
             Expression::Load { pointer } => pointer.as_type(context),
             Expression::Unary { op: _, expr } => expr.as_type(context),
             Expression::Binary { op, left, right: _ } => match op {
@@ -82,9 +76,14 @@ impl AsType for Handle<Expression> {
             Expression::AtomicResult { ty, comparison: _ } => context[*ty].clone(),
             Expression::WorkGroupUniformLoadResult { ty } => context[*ty].clone(),
             Expression::ArrayLength(_) => scalar(ScalarKind::Uint, 4),
+            Expression::FunctionArgument(index) => {
+                let ty_handle = context.error_context.module.functions[context.function].arguments
+                    [*index as usize]
+                    .ty;
+                context.error_context.module.types[ty_handle].clone()
+            }
 
             // TODO:
-            // Expression::FunctionArgument(_) => todo!(),
             // Expression::GlobalVariable(_) => todo!(),
             // Expression::LocalVariable(_) => todo!(),
             // Expression::Access { base, index } => todo!(),
@@ -123,10 +122,10 @@ impl AsType for Handle<Expression> {
             // Expression::ImageQuery { image, query } => todo!(),
             _ => Type {
                 name: Some("*UNKNOWN*".into()),
-                inner: TypeInner::Scalar {
+                inner: TypeInner::Scalar(Scalar {
                     kind: ScalarKind::Uint,
                     width: 0,
-                },
+                }),
             },
         }
     }

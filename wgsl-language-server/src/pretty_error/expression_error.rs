@@ -10,14 +10,12 @@ impl ContextErrorLabel for ExpressionError {
         labels: Vec<Label<()>>,
     ) -> Vec<Label<()>> {
         match self {
-            ExpressionError::DoesntExist => append_info(labels, "Expression does not exist"),
             ExpressionError::NotInScope => append_info(labels, "Expression is out of scope"),
-            ExpressionError::IndexOutOfBounds(expression, scalar) => {
-                let scalar = scalar.print(context);
+            ExpressionError::IndexOutOfBounds(expression, index) => {
                 let expression = expression.print(context);
                 append_info(
                     labels,
-                    format!("Index: '{scalar}' is out of bounds for '{expression}'"),
+                    format!("Index: '{index}' is out of bounds for '{expression}'"),
                 )
             }
             _ => labels,
