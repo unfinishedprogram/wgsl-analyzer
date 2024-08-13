@@ -13,25 +13,27 @@ pub fn codespan_to_lsp_diagnostics(
     url: &Url,
     src: &str,
 ) -> Vec<lsp_types::Diagnostic> {
+    let primary_label = diagnostic
+        .labels
+        .iter()
+        .find(|it| it.style == LabelStyle::Primary)
+        .or_else(|| diagnostic.labels.first());
+
     let range = if let Some(location) = location {
         source_location_to_range(Some(location), src).unwrap_or_default()
     } else {
         span_to_lsp_range(
-            diagnostic
-                .labels
-                .first()
-                .map(|label| range_to_span(label.range.clone()))
-                .unwrap_or_default(),
+            range_to_span(primary_label.map(|it| it.range.clone()).unwrap_or_default()),
             src,
         )
     };
 
     let message = if diagnostic.message.is_empty() {
-        diagnostic
-            .labels
-            .first()
-            .map(|label| label.message.clone())
-            .unwrap_or_default()
+        if let Some(label) = primary_label {
+            label.message.clone()
+        } else {
+            "".to_string()
+        }
     } else {
         diagnostic.message
     };
@@ -106,10 +108,9 @@ pub fn validation_error_to_lsp_diagnostic(
     url: &lsp_types::Url,
     module: &naga::Module,
 ) -> Vec<lsp_types::Diagnostic> {
-    let location = err.location(src);
     codespan_to_lsp_diagnostics(
         validation_error_to_codespan_diagnostic(err, src, module),
-        location,
+        None,
         url,
         src,
     )

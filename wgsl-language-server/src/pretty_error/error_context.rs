@@ -12,7 +12,7 @@ use naga::{
 };
 use type_print::TypePrintable;
 
-use super::label_tools::{label_secondary, LabelAppend};
+use super::label_tools::{label_primary, label_secondary, LabelAppend};
 
 pub struct ErrorContext<'a> {
     pub module: &'a Module,
@@ -22,6 +22,12 @@ pub struct ErrorContext<'a> {
 macro_rules! label {
     ($span:expr, $($arg:tt)*) => {
         label_secondary($span, format!($($arg)*))
+    }
+}
+
+macro_rules! label_primary {
+    ($span:expr, $($arg:tt)*) => {
+        label_primary($span, format!($($arg)*))
     }
 }
 
@@ -36,11 +42,7 @@ impl<'a> ErrorContext<'a> {
                 handle,
                 name,
                 source,
-            } => self.function_error_diagnostic(
-                Diagnostic::error().with_label(label!(error, "Function {name} is invalid")),
-                *handle,
-                source,
-            ),
+            } => self.function_error_diagnostic(Diagnostic::error(), *handle, source),
             other => {
                 Diagnostic::error().with_message("UNIMPLEMENTED: ".to_string() + &other.to_string())
             }
@@ -86,7 +88,7 @@ impl<'a> ErrorContext<'a> {
                     "Function does not always return a value",
                 ))
             }
-            .with_label(label!(
+            .with_label(label_primary!(
                 &self.module.functions.get_span(handle),
                 "Expected function `{}` to return type `{}`",
                 func.name.clone().unwrap_or_default(),
@@ -106,8 +108,8 @@ impl<'a> ErrorContext<'a> {
             FunctionError::InvalidIfType(expr_handle) => {
                 let expr_type = self.type_of_expression_str(handle, *expr_handle);
                 diagnostic
-                    .with_label(label!(
-                        &self.module.functions.get_span(handle),
+                    .with_label(label_primary!(
+                        &func.expressions.get_span(*expr_handle),
                         "`if` condition must resolve to a scalar boolean value",
                     ))
                     .with_label(label!(

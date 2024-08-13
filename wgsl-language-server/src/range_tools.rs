@@ -64,9 +64,7 @@ pub fn source_location_to_range(
     location: Option<SourceLocation>,
     source: &str,
 ) -> Option<lsp_types::Range> {
-    let Some(location) = location else {
-        return None;
-    };
+    let location = location?;
 
     let start = position_at_char_offset(source, location.offset as usize);
     let end = position_at_char_offset(source, (location.offset + location.length) as usize);
