@@ -1,14 +1,14 @@
 pub mod as_type;
 pub mod code_provider;
 pub mod index_impl;
-pub mod span_priovider;
+pub mod span_provider;
 pub mod type_print;
 
 use as_type::AsType;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use naga::{
     valid::{FunctionError, ValidationError},
-    Expression, Function, Handle, Module, Span, WithSpan,
+    Expression, Function, Handle, Module, WithSpan,
 };
 use type_print::TypePrintable;
 
@@ -46,8 +46,8 @@ impl<'a> ErrorContext<'a> {
         }
     }
 
-    fn label_ctx(&self, function_handle: Handle<Function>) -> LabelContext {
-        LabelContext::new(self, function_handle)
+    fn function_err_ctx(&self, function_handle: Handle<Function>) -> FunctionErrorContext {
+        FunctionErrorContext::new(self, function_handle)
     }
 
     fn type_of_expression_str(
@@ -55,7 +55,7 @@ impl<'a> ErrorContext<'a> {
         function_handle: Handle<Function>,
         expr_handle: Handle<Expression>,
     ) -> String {
-        let label_ctx = self.label_ctx(function_handle);
+        let label_ctx = self.function_err_ctx(function_handle);
         expr_handle.as_type(&label_ctx).print_type(&label_ctx)
     }
 
@@ -87,7 +87,7 @@ impl<'a> ErrorContext<'a> {
                     .as_ref()
                     .unwrap()
                     .ty
-                    .print_type(&self.label_ctx(handle)),
+                    .print_type(&self.function_err_ctx(handle)),
             )),
             _ => diagnostic.with_message("UNIMPLEMENTED".to_string() + &error.to_string()),
             // FunctionError::Expression { handle, source } => todo!(),
@@ -136,15 +136,17 @@ impl<'a> ErrorContext<'a> {
     }
 }
 
-pub struct LabelContext<'a> {
-    pub error_context: &'a ErrorContext<'a>,
+pub struct FunctionErrorContext<'a> {
+    pub module: &'a Module,
+    pub code: &'a str,
     pub function: Handle<Function>,
 }
 
-impl<'a> LabelContext<'a> {
+impl<'a> FunctionErrorContext<'a> {
     pub fn new(error_context: &'a ErrorContext, function: Handle<Function>) -> Self {
         Self {
-            error_context,
+            module: &error_context.module,
+            code: error_context.code,
             function,
         }
     }
@@ -166,10 +168,6 @@ pub fn append_primary(
     labels
 }
 
-pub trait ContextErrorLabel {
-    fn get_label(&self, context: &LabelContext, labels: Vec<Label<()>>) -> Vec<Label<()>>;
-}
-
 pub trait ContextErrorFmt {
-    fn print(&self, context: &LabelContext) -> String;
+    fn print(&self, context: &FunctionErrorContext) -> String;
 }

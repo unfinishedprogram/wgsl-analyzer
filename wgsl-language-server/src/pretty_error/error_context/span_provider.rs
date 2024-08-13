@@ -1,6 +1,6 @@
 use naga::{Expression, Function, Handle, Span};
 
-use super::{ErrorContext, LabelContext};
+use super::{ErrorContext, FunctionErrorContext};
 
 pub trait SpanProvider<T> {
     fn get_span(&self, handle: Handle<T>) -> Span;
@@ -20,13 +20,13 @@ impl SpanProvider<Function> for ErrorContext<'_> {
 Label Context
 -----------*/
 
-impl SpanProvider<Function> for LabelContext<'_> {
+impl SpanProvider<Function> for FunctionErrorContext<'_> {
     fn get_span(&self, handle: Handle<Function>) -> Span {
-        self.error_context.get_span(handle)
+        self.module.functions.get_span(handle)
     }
 }
 
-impl SpanProvider<Expression> for LabelContext<'_> {
+impl SpanProvider<Expression> for FunctionErrorContext<'_> {
     fn get_span(&self, handle: Handle<Expression>) -> Span {
         self[self.function].expressions.get_span(handle)
     }

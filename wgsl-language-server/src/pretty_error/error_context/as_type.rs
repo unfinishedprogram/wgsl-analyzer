@@ -1,12 +1,12 @@
-use super::LabelContext;
+use super::FunctionErrorContext;
 use naga::{Expression, Handle, Scalar, ScalarKind, Type, TypeInner};
 
 pub trait AsType {
-    fn as_type(&self, context: &LabelContext) -> Type;
+    fn as_type(&self, context: &FunctionErrorContext) -> Type;
 }
 
 impl AsType for Handle<Expression> {
-    fn as_type(&self, context: &LabelContext) -> Type {
+    fn as_type(&self, context: &FunctionErrorContext) -> Type {
         fn scalar(kind: ScalarKind, width: u8) -> Type {
             Type {
                 name: None,
@@ -77,10 +77,9 @@ impl AsType for Handle<Expression> {
             Expression::WorkGroupUniformLoadResult { ty } => context[*ty].clone(),
             Expression::ArrayLength(_) => scalar(ScalarKind::Uint, 4),
             Expression::FunctionArgument(index) => {
-                let ty_handle = context.error_context.module.functions[context.function].arguments
-                    [*index as usize]
-                    .ty;
-                context.error_context.module.types[ty_handle].clone()
+                let ty_handle =
+                    context.module.functions[context.function].arguments[*index as usize].ty;
+                context.module.types[ty_handle].clone()
             }
 
             // TODO:

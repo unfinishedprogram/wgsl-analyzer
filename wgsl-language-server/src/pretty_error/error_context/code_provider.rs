@@ -2,7 +2,7 @@ use naga::Handle;
 
 use crate::pretty_error::label_tools::AsRange;
 
-use super::{span_priovider::SpanProvider, ErrorContext, LabelContext};
+use super::{span_provider::SpanProvider, ErrorContext, FunctionErrorContext};
 
 pub trait CodeProvider<T>: SpanProvider<T> {
     fn code(&self) -> &str;
@@ -11,12 +11,12 @@ pub trait CodeProvider<T>: SpanProvider<T> {
     }
 }
 
-impl<'a, T> CodeProvider<T> for LabelContext<'a>
+impl<'a, T> CodeProvider<T> for FunctionErrorContext<'a>
 where
-    LabelContext<'a>: SpanProvider<T>,
+    FunctionErrorContext<'a>: SpanProvider<T>,
 {
     fn code(&self) -> &str {
-        self.error_context.code
+        self.code
     }
 }
 

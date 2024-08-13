@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use naga::{Constant, Expression, Function, Handle, Type};
 
-use super::{ErrorContext, LabelContext};
+use super::{ErrorContext, FunctionErrorContext};
 
 /*-----------
 Error Context
@@ -36,15 +36,15 @@ impl Index<Handle<Constant>> for ErrorContext<'_> {
 Label Context
 -----------*/
 
-impl Index<Handle<Function>> for LabelContext<'_> {
+impl Index<Handle<Function>> for FunctionErrorContext<'_> {
     type Output = Function;
 
     fn index(&self, index: Handle<Function>) -> &Self::Output {
-        &self.error_context[index]
+        &self.module.functions[index]
     }
 }
 
-impl Index<Handle<Expression>> for LabelContext<'_> {
+impl Index<Handle<Expression>> for FunctionErrorContext<'_> {
     type Output = Expression;
 
     fn index(&self, index: Handle<Expression>) -> &Self::Output {
@@ -52,18 +52,18 @@ impl Index<Handle<Expression>> for LabelContext<'_> {
     }
 }
 
-impl Index<Handle<Type>> for LabelContext<'_> {
+impl Index<Handle<Type>> for FunctionErrorContext<'_> {
     type Output = Type;
 
     fn index(&self, index: Handle<Type>) -> &Self::Output {
-        &self.error_context[index]
+        &self.module.types[index]
     }
 }
 
-impl Index<Handle<Constant>> for LabelContext<'_> {
+impl Index<Handle<Constant>> for FunctionErrorContext<'_> {
     type Output = Constant;
 
     fn index(&self, index: Handle<Constant>) -> &Self::Output {
-        &self.error_context[index]
+        &self.module.constants[index]
     }
 }
