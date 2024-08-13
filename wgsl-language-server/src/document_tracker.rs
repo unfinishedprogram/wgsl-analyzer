@@ -43,24 +43,22 @@ impl TrackedDocument {
         self.compilation_result.insert(result)
     }
 
-    pub fn get_lsp_diagnostics(&self) -> Option<lsp_types::Diagnostic> {
+    pub fn get_lsp_diagnostics(&self) -> Vec<lsp_types::Diagnostic> {
         let Some(compilation_result) = &self.compilation_result else {
-            return None;
+            return vec![];
         };
 
         match compilation_result {
-            Err(parse_error) => Some(parse_error_to_lsp_diagnostic(
-                parse_error,
-                &self.content,
-                &self.uri,
-            )),
-            Ok((module, Err(validation_error))) => Some(validation_error_to_lsp_diagnostic(
+            Err(parse_error) => {
+                parse_error_to_lsp_diagnostic(parse_error, &self.content, &self.uri)
+            }
+            Ok((module, Err(validation_error))) => validation_error_to_lsp_diagnostic(
                 validation_error,
                 &self.content,
                 &self.uri,
                 module,
-            )),
-            _ => None,
+            ),
+            _ => vec![],
         }
     }
 }

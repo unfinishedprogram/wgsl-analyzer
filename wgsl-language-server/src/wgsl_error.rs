@@ -7,12 +7,12 @@ use crate::{
     range_tools::{new_location, range_to_span, source_location_to_range, span_to_lsp_range},
 };
 
-pub fn codespan_to_lsp_diagnostic(
+pub fn codespan_to_lsp_diagnostics(
     diagnostic: codespan_reporting::diagnostic::Diagnostic<()>,
     location: Option<SourceLocation>,
     url: &Url,
     src: &str,
-) -> lsp_types::Diagnostic {
+) -> Vec<lsp_types::Diagnostic> {
     let range = if let Some(location) = location {
         source_location_to_range(Some(location), src).unwrap_or_default()
     } else {
@@ -54,20 +54,20 @@ pub fn codespan_to_lsp_diagnostic(
         })
     }
 
-    lsp_types::Diagnostic {
+    vec![lsp_types::Diagnostic {
         message,
         range,
         related_information: Some(related_information),
         source: Some("wgsl-language-support".to_owned()),
         ..Default::default()
-    }
+    }]
 }
 
 pub fn parse_error_to_lsp_diagnostic(
     err: &ParseError,
     src: &str,
     url: &lsp_types::Url,
-) -> lsp_types::Diagnostic {
+) -> Vec<lsp_types::Diagnostic> {
     let labels = err
         .labels()
         .map(|(span, msg)| {
@@ -86,7 +86,7 @@ pub fn parse_error_to_lsp_diagnostic(
         .with_message(err.message())
         .with_notes(vec!["PARSE_ERROR".to_string()]);
 
-    codespan_to_lsp_diagnostic(diagnostic, location, url, src)
+    codespan_to_lsp_diagnostics(diagnostic, location, url, src)
 }
 
 pub fn validation_error_to_codespan_diagnostic(
@@ -105,9 +105,9 @@ pub fn validation_error_to_lsp_diagnostic(
     src: &str,
     url: &lsp_types::Url,
     module: &naga::Module,
-) -> lsp_types::Diagnostic {
+) -> Vec<lsp_types::Diagnostic> {
     let location = err.location(src);
-    codespan_to_lsp_diagnostic(
+    codespan_to_lsp_diagnostics(
         validation_error_to_codespan_diagnostic(err, src, module),
         location,
         url,

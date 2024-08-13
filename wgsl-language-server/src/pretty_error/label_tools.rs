@@ -39,3 +39,7 @@ impl LabelAppend for codespan_reporting::diagnostic::Diagnostic<()> {
 pub fn label_primary(span: &impl AsRange, msg: impl Into<String>) -> Label<()> {
     Label::primary((), span.get_range()).with_message(msg)
 }
+
+pub fn label_secondary(span: &impl AsRange, msg: impl Into<String>) -> Label<()> {
+    Label::secondary((), span.get_range()).with_message(msg)
+}

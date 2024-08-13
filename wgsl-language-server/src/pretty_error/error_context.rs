@@ -5,14 +5,14 @@ pub mod span_provider;
 pub mod type_print;
 
 use as_type::AsType;
-use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::diagnostic::Diagnostic;
 use naga::{
     valid::{FunctionError, ValidationError},
     Expression, Function, Handle, Module, WithSpan,
 };
 use type_print::TypePrintable;
 
-use super::label_tools::{label_primary, AsRange, LabelAppend};
+use super::label_tools::{label_secondary, LabelAppend};
 
 pub struct ErrorContext<'a> {
     pub module: &'a Module,
@@ -21,7 +21,7 @@ pub struct ErrorContext<'a> {
 
 macro_rules! label {
     ($span:expr, $($arg:tt)*) => {
-        label_primary($span, format!($($arg)*))
+        label_secondary($span, format!($($arg)*))
     }
 }
 
@@ -48,7 +48,11 @@ impl<'a> ErrorContext<'a> {
     }
 
     fn function_err_ctx(&self, function_handle: Handle<Function>) -> FunctionErrorContext {
-        FunctionErrorContext::new(self, function_handle)
+        FunctionErrorContext {
+            module: self.module,
+            code: self.code,
+            function: function_handle,
+        }
     }
 
     fn type_of_expression_str(
@@ -92,6 +96,26 @@ impl<'a> ErrorContext<'a> {
                     .ty
                     .print_type(&self.function_err_ctx(handle)),
             )),
+            FunctionError::InvalidArgumentType { index: _, name: _ } => {
+                diagnostic.with_label(label!(
+                    &self.module.functions.get_span(handle),
+                    "{}",
+                    error.to_string()
+                ))
+            }
+            FunctionError::InvalidIfType(expr_handle) => {
+                let expr_type = self.type_of_expression_str(handle, *expr_handle);
+                diagnostic
+                    .with_label(label!(
+                        &self.module.functions.get_span(handle),
+                        "`if` condition must resolve to a scalar boolean value",
+                    ))
+                    .with_label(label!(
+                        &func.expressions.get_span(*expr_handle),
+                        "Expression of type `{}` found",
+                        expr_type
+                    ))
+            }
             _ => diagnostic.with_message("UNIMPLEMENTED".to_string() + &error.to_string()),
             // FunctionError::Expression { handle, source } => todo!(),
             // FunctionError::ExpressionAlreadyInScope(_) => todo!(),
@@ -100,7 +124,6 @@ impl<'a> ErrorContext<'a> {
             //     name,
             //     source,
             // } => todo!(),
-            // FunctionError::InvalidArgumentType { index, name } => todo!(),
             // FunctionError::NonConstructibleReturnType => todo!(),
             // FunctionError::InvalidArgumentPointerSpace { index, name, space } => todo!(),
             // FunctionError::InstructionsAfterReturn => todo!(),
@@ -108,7 +131,6 @@ impl<'a> ErrorContext<'a> {
             // FunctionError::ContinueOutsideOfLoop => todo!(),
             // FunctionError::InvalidReturnSpot => todo!(),
 
-            // FunctionError::InvalidIfType(_) => todo!(),
             // FunctionError::InvalidSwitchType(_) => todo!(),
             // FunctionError::ConflictingSwitchCase(_) => todo!(),
             // FunctionError::ConflictingCaseType => todo!(),
@@ -143,34 +165,4 @@ pub struct FunctionErrorContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
     pub function: Handle<Function>,
-}
-
-impl<'a> FunctionErrorContext<'a> {
-    pub fn new(error_context: &'a ErrorContext, function: Handle<Function>) -> Self {
-        Self {
-            module: &error_context.module,
-            code: error_context.code,
-            function,
-        }
-    }
-}
-
-pub fn append_info(mut labels: Vec<Label<()>>, message: impl Into<String>) -> Vec<Label<()>> {
-    let range = labels.last().map(|v| v.range.clone()).unwrap_or_default();
-    labels.push(Label::secondary((), range).with_message(message.into()));
-    labels
-}
-
-pub fn append_primary(
-    mut labels: Vec<Label<()>>,
-    message: impl Into<String>,
-    range: impl AsRange,
-) -> Vec<Label<()>> {
-    let range = range.get_range();
-    labels.push(Label::primary((), range).with_message(message.into()));
-    labels
-}
-
-pub trait ContextErrorFmt {
-    fn print(&self, context: &FunctionErrorContext) -> String;
 }
