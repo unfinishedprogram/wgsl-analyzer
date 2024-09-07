@@ -3,16 +3,11 @@ use naga::{SourceLocation, Span};
 
 pub trait RangeTools {
     fn contains_line(&self, position: &Position) -> bool;
-    fn contains(&self, position: &Position) -> bool;
 }
 
 impl RangeTools for lsp_types::Range {
     fn contains_line(&self, position: &Position) -> bool {
         position.line >= self.start.line && position.line <= self.end.line
-    }
-
-    fn contains(&self, position: &Position) -> bool {
-        position >= &self.start && position < &self.end
     }
 }
 
@@ -64,9 +59,7 @@ pub fn source_location_to_range(
     location: Option<SourceLocation>,
     source: &str,
 ) -> Option<lsp_types::Range> {
-    let Some(location) = location else {
-        return None;
-    };
+    let location = location?;
 
     let start = position_at_char_offset(source, location.offset as usize);
     let end = position_at_char_offset(source, (location.offset + location.length) as usize);
@@ -74,7 +67,7 @@ pub fn source_location_to_range(
     Some(lsp_types::Range { start, end })
 }
 
-pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Url) -> Location {
+pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Uri) -> Location {
     let std::ops::Range { start, end } = range;
 
     let start = position_at_char_offset(source, start);

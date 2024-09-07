@@ -1,25 +1,25 @@
-use naga::{FunctionResult, Handle, ScalarKind, Type, TypeInner};
+use naga::{FunctionResult, Handle, Scalar, ScalarKind, Type, TypeInner};
 
-use super::LabelContext;
+use super::FunctionErrorContext;
 
 pub trait TypePrintable {
-    fn print_type(&self, context: &LabelContext) -> String;
+    fn print_type(&self, context: &FunctionErrorContext) -> String;
 }
 
 impl TypePrintable for FunctionResult {
-    fn print_type(&self, context: &LabelContext) -> String {
+    fn print_type(&self, context: &FunctionErrorContext) -> String {
         self.ty.print_type(context)
     }
 }
 
 impl TypePrintable for Handle<Type> {
-    fn print_type(&self, context: &LabelContext) -> String {
-        context.error_context.module.types[*self].print_type(context)
+    fn print_type(&self, context: &FunctionErrorContext) -> String {
+        context.module.types[*self].print_type(context)
     }
 }
 
 impl TypePrintable for Type {
-    fn print_type(&self, context: &LabelContext) -> String {
+    fn print_type(&self, context: &FunctionErrorContext) -> String {
         if let Some(name) = &self.name {
             format!("{name}:{}", self.inner.print_type(context))
         } else {
@@ -29,36 +29,42 @@ impl TypePrintable for Type {
 }
 
 impl TypePrintable for TypeInner {
-    fn print_type(&self, context: &LabelContext) -> String {
+    fn print_type(&self, context: &FunctionErrorContext) -> String {
         fn print_scalar(kind: &ScalarKind, width: u8) -> String {
             match kind {
                 ScalarKind::Sint => format!("i{}", width * 8),
                 ScalarKind::Uint => format!("u{}", width * 8),
                 ScalarKind::Float => format!("f{}", width * 8),
                 ScalarKind::Bool => "bool".into(),
+                ScalarKind::AbstractFloat => "AbstractFloat".into(),
+                ScalarKind::AbstractInt => "AbstractInt".into(),
             }
         }
         match self {
-            TypeInner::Scalar { kind, width } => print_scalar(kind, *width),
-            TypeInner::Vector { size, kind, width } => {
+            TypeInner::Scalar(Scalar { kind, width }) => print_scalar(kind, *width),
+            TypeInner::Vector {
+                size,
+                scalar: Scalar { kind, width },
+            } => {
                 format!("vec{}<{}>", *size as u8, print_scalar(kind, *width))
             }
             TypeInner::Matrix {
                 columns,
                 rows,
-                width,
+                scalar: Scalar { kind, width },
             } => {
                 format!("mat{}x{}<{}>", *columns as u8, *rows as u8, width * 8)
             }
-            TypeInner::Atomic { kind, width } => format!("Atomic<{}>", print_scalar(kind, *width)),
+            TypeInner::Atomic(Scalar { kind, width }) => {
+                format!("Atomic<{}>", print_scalar(kind, *width))
+            }
             TypeInner::Pointer { base, space } => {
                 format!("ptr<{space:?}, {}>", base.print_type(context))
             }
             TypeInner::ValuePointer {
                 size,
-                kind,
-                width,
                 space,
+                scalar: Scalar { kind, width },
             } => format!("ptr<{space:?}, {}>", print_scalar(kind, *width)),
             TypeInner::Array { base, size, stride } => match size {
                 naga::ArraySize::Constant(s) => format!("Array<{}, {s}>", base.print_type(context)),

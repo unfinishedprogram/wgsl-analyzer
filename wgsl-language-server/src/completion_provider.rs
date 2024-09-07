@@ -50,7 +50,7 @@ impl CompletionProvider for TrackedDocument {
                     res.extend(self.get_locals(position, handle));
                 }
 
-                res.push(new_completion_item(name, CompletionItemKind::Function))
+                res.push(new_completion_item(name, CompletionItemKind::FUNCTION))
             }
         }
 
@@ -76,7 +76,7 @@ impl CompletionProvider for TrackedDocument {
 
             res.push(detailed_completion_item(
                 name.to_owned(),
-                CompletionItemKind::Variable,
+                CompletionItemKind::VARIABLE,
                 &self.content[range],
             ))
         }
@@ -88,13 +88,13 @@ impl CompletionProvider for TrackedDocument {
                 if let Some(name) = &variable.name {
                     res.push(new_completion_item(
                         name.to_owned(),
-                        CompletionItemKind::Variable,
+                        CompletionItemKind::VARIABLE,
                     ))
                 }
             } else if let Some(name) = &variable.name {
                 res.push(new_completion_item(
                     name.to_owned(),
-                    CompletionItemKind::Variable,
+                    CompletionItemKind::VARIABLE,
                 ))
             }
         }
@@ -112,7 +112,7 @@ impl CompletionProvider for TrackedDocument {
             if let Some(name) = &ty.name {
                 res.push(detailed_completion_item(
                     name.to_owned(),
-                    CompletionItemKind::Class,
+                    CompletionItemKind::CLASS,
                     &format!("{:?}", ty.inner),
                 ))
             }
@@ -130,7 +130,7 @@ impl CompletionProvider for TrackedDocument {
             if let Some(name) = &constant.name {
                 res.push(new_completion_item(
                     name.to_owned(),
-                    CompletionItemKind::Constant,
+                    CompletionItemKind::CONSTANT,
                 ))
             }
         }

@@ -1,35 +1,39 @@
-use lsp_types::{DiagnosticRelatedInformation, Url};
+use codespan_reporting::diagnostic::{Diagnostic, LabelStyle};
+use lsp_types::{DiagnosticRelatedInformation, Uri};
 use naga::{front::wgsl::ParseError, SourceLocation};
 
-use crate::range_tools::{
-    new_location, range_to_span, source_location_to_range, span_to_lsp_range,
+use crate::{
+    pretty_error::error_context::ErrorContext,
+    range_tools::{new_location, range_to_span, source_location_to_range, span_to_lsp_range},
 };
 
-pub fn codespan_to_lsp_diagnostic(
+pub fn codespan_to_lsp_diagnostics(
     diagnostic: codespan_reporting::diagnostic::Diagnostic<()>,
     location: Option<SourceLocation>,
-    url: &Url,
+    url: &Uri,
     src: &str,
-) -> lsp_types::Diagnostic {
+) -> Vec<lsp_types::Diagnostic> {
+    let primary_label = diagnostic
+        .labels
+        .iter()
+        .find(|it| it.style == LabelStyle::Primary)
+        .or_else(|| diagnostic.labels.first());
+
     let range = if let Some(location) = location {
         source_location_to_range(Some(location), src).unwrap_or_default()
     } else {
         span_to_lsp_range(
-            diagnostic
-                .labels
-                .first()
-                .map(|label| range_to_span(label.range.clone()))
-                .unwrap_or_default(),
+            range_to_span(primary_label.map(|it| it.range.clone()).unwrap_or_default()),
             src,
         )
     };
 
     let message = if diagnostic.message.is_empty() {
-        diagnostic
-            .labels
-            .first()
-            .map(|label| label.message.clone())
-            .unwrap_or_default()
+        if let Some(label) = primary_label {
+            label.message.clone()
+        } else {
+            "".to_string()
+        }
     } else {
         diagnostic.message
     };
@@ -52,21 +56,60 @@ pub fn codespan_to_lsp_diagnostic(
         })
     }
 
-    lsp_types::Diagnostic {
+    vec![lsp_types::Diagnostic {
         message,
         range,
         related_information: Some(related_information),
         source: Some("wgsl-language-support".to_owned()),
         ..Default::default()
-    }
+    }]
 }
 
 pub fn parse_error_to_lsp_diagnostic(
     err: &ParseError,
     src: &str,
-    url: &lsp_types::Url,
-) -> lsp_types::Diagnostic {
-    let diagnostic = err.diagnostic();
+    url: &lsp_types::Uri,
+) -> Vec<lsp_types::Diagnostic> {
+    let labels = err
+        .labels()
+        .map(|(span, msg)| {
+            codespan_reporting::diagnostic::Label::new(
+                LabelStyle::Primary,
+                (),
+                span.to_range().unwrap(),
+            )
+            .with_message(msg)
+        })
+        .collect();
+
     let location = err.location(src);
-    codespan_to_lsp_diagnostic(diagnostic, location, url, src)
+    let diagnostic = Diagnostic::error()
+        .with_labels(labels)
+        .with_message(err.message());
+
+    codespan_to_lsp_diagnostics(diagnostic, location, url, src)
+}
+
+pub fn validation_error_to_codespan_diagnostic(
+    err: &naga::WithSpan<naga::valid::ValidationError>,
+    src: &str,
+    module: &naga::Module,
+) -> codespan_reporting::diagnostic::Diagnostic<()> {
+    let ctx = ErrorContext::new(module, src);
+
+    ctx.validation_error_diagnostic(err)
+}
+
+pub fn validation_error_to_lsp_diagnostic(
+    err: &naga::WithSpan<naga::valid::ValidationError>,
+    src: &str,
+    url: &lsp_types::Uri,
+    module: &naga::Module,
+) -> Vec<lsp_types::Diagnostic> {
+    codespan_to_lsp_diagnostics(
+        validation_error_to_codespan_diagnostic(err, src, module),
+        None,
+        url,
+        src,
+    )
 }
