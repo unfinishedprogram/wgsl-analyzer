@@ -20,6 +20,7 @@ use crate::{
 pub struct TrackedDocument {
     pub uri: Uri,
     pub content: String,
+    #[allow(unused)]
     pub version: i32,
     pub compilation_result: Option<CompilationResult>,
     pub last_valid_module: Option<Module>,

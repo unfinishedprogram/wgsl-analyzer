@@ -1,7 +1,5 @@
 pub mod as_type;
-pub mod code_provider;
 pub mod index_impl;
-pub mod span_provider;
 pub mod type_print;
 
 use as_type::AsType;
@@ -40,7 +38,7 @@ impl<'a> ErrorContext<'a> {
         match error.as_inner() {
             ValidationError::Function {
                 handle,
-                name,
+                name: _,
                 source,
             } => self.function_error_diagnostic(Diagnostic::error(), *handle, source),
             other => {
@@ -168,6 +166,7 @@ impl<'a> ErrorContext<'a> {
 
 pub struct FunctionErrorContext<'a> {
     pub module: &'a Module,
+    #[allow(unused)]
     pub code: &'a str,
     pub function: Handle<Function>,
 }
