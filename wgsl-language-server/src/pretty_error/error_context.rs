@@ -118,7 +118,11 @@ impl<'a> ErrorContext<'a> {
                         expr_type
                     ))
             }
-            _ => diagnostic.with_message("UNIMPLEMENTED".to_string() + &error.to_string()),
+            _ => diagnostic.with_label(label!(
+                &self.module.functions.get_span(handle),
+                "{}",
+                &error.to_string()
+            )),
             // FunctionError::Expression { handle, source } => todo!(),
             // FunctionError::ExpressionAlreadyInScope(_) => todo!(),
             // FunctionError::LocalVariable {
@@ -134,7 +138,6 @@ impl<'a> ErrorContext<'a> {
             // FunctionError::InvalidReturnSpot => todo!(),
 
             // FunctionError::InvalidSwitchType(_) => todo!(),
-            // FunctionError::ConflictingSwitchCase(_) => todo!(),
             // FunctionError::ConflictingCaseType => todo!(),
             // FunctionError::MissingDefaultCase => todo!(),
             // FunctionError::MultipleDefaultCases => todo!(),
