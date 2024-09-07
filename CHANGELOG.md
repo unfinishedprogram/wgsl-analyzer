@@ -42,3 +42,14 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Fixed
 
 - [Incorrect diagnostic due to detection of entry-point outputs](https://github.com/unfinishedprogram/wgsl-analyzer/issues/1)
+
+## [0.4.0] 
+
+### Changed
+
+- Moved to mainline Naga
+  - Can remain more up-to-date with Naga versions as they are released
+
+### Fixed
+
+- [#3](https://github.com/unfinishedprogram/wgsl-analyzer/issues/3) Is now fixed, since it was caused by a bug in a previous version of Naga
