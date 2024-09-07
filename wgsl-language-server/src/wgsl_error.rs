@@ -85,8 +85,7 @@ pub fn parse_error_to_lsp_diagnostic(
     let location = err.location(src);
     let diagnostic = Diagnostic::error()
         .with_labels(labels)
-        .with_message(err.message())
-        .with_notes(vec!["PARSE_ERROR".to_string()]);
+        .with_message(err.message());
 
     codespan_to_lsp_diagnostics(diagnostic, location, url, src)
 }
@@ -99,7 +98,6 @@ pub fn validation_error_to_codespan_diagnostic(
     let ctx = ErrorContext::new(module, src);
 
     ctx.validation_error_diagnostic(err)
-        .with_notes(vec!["VALIDATION_ERROR".to_string()])
 }
 
 pub fn validation_error_to_lsp_diagnostic(
