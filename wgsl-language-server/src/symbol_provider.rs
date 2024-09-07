@@ -39,9 +39,9 @@ fn parse_function_signature(signature: &str) -> String {
 impl<'a> SymbolItem {
     fn symbol_kind(&self) -> SymbolKind {
         match self {
-            SymbolItem::Constant(_) => SymbolKind::Constant,
-            SymbolItem::Function(_) => SymbolKind::Function,
-            SymbolItem::Struct(_) => SymbolKind::Struct,
+            SymbolItem::Constant(_) => SymbolKind::CONSTANT,
+            SymbolItem::Function(_) => SymbolKind::FUNCTION,
+            SymbolItem::Struct(_) => SymbolKind::STRUCT,
         }
     }
 

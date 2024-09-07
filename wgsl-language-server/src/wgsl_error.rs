@@ -1,5 +1,5 @@
 use codespan_reporting::diagnostic::{Diagnostic, LabelStyle};
-use lsp_types::{DiagnosticRelatedInformation, Url};
+use lsp_types::{DiagnosticRelatedInformation, Uri};
 use naga::{front::wgsl::ParseError, SourceLocation};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 pub fn codespan_to_lsp_diagnostics(
     diagnostic: codespan_reporting::diagnostic::Diagnostic<()>,
     location: Option<SourceLocation>,
-    url: &Url,
+    url: &Uri,
     src: &str,
 ) -> Vec<lsp_types::Diagnostic> {
     let primary_label = diagnostic
@@ -68,7 +68,7 @@ pub fn codespan_to_lsp_diagnostics(
 pub fn parse_error_to_lsp_diagnostic(
     err: &ParseError,
     src: &str,
-    url: &lsp_types::Url,
+    url: &lsp_types::Uri,
 ) -> Vec<lsp_types::Diagnostic> {
     let labels = err
         .labels()
@@ -105,7 +105,7 @@ pub fn validation_error_to_codespan_diagnostic(
 pub fn validation_error_to_lsp_diagnostic(
     err: &naga::WithSpan<naga::valid::ValidationError>,
     src: &str,
-    url: &lsp_types::Url,
+    url: &lsp_types::Uri,
     module: &naga::Module,
 ) -> Vec<lsp_types::Diagnostic> {
     codespan_to_lsp_diagnostics(

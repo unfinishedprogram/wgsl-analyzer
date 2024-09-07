@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
-    PublishDiagnosticsParams, TextDocumentItem, Url,
+    PublishDiagnosticsParams, TextDocumentItem, Uri,
 };
 use naga::{
     front::wgsl::ParseError,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub struct TrackedDocument {
-    pub uri: Url,
+    pub uri: Uri,
     pub content: String,
     pub version: i32,
     pub compilation_result: Option<CompilationResult>,
@@ -65,7 +65,7 @@ impl TrackedDocument {
 
 pub struct DocumentTracker {
     validator: Validator,
-    documents: HashMap<Url, TrackedDocument>,
+    documents: HashMap<Uri, TrackedDocument>,
 }
 
 impl DocumentTracker {
@@ -104,7 +104,7 @@ impl DocumentTracker {
         }
     }
 
-    pub fn remove(&mut self, uri: &Url) {
+    pub fn remove(&mut self, uri: &Uri) {
         self.documents.remove(uri);
     }
 
@@ -124,7 +124,7 @@ impl DocumentTracker {
         diagnostics
     }
 
-    pub fn get_completion(&self, url: &Url, position: &Position) -> Vec<CompletionItem> {
+    pub fn get_completion(&self, url: &Uri, position: &Position) -> Vec<CompletionItem> {
         if let Some(doc) = self.documents.get(url) {
             return doc.get_completion(position);
         }

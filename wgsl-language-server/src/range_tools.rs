@@ -72,7 +72,7 @@ pub fn source_location_to_range(
     Some(lsp_types::Range { start, end })
 }
 
-pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Url) -> Location {
+pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Uri) -> Location {
     let std::ops::Range { start, end } = range;
 
     let start = position_at_char_offset(source, start);
