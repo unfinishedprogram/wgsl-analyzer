@@ -7,7 +7,14 @@ use crate::{
 };
 
 pub trait CompletionProvider {
-    fn get_completion(&self, position: &Position) -> Vec<CompletionItem>;
+    fn get_completion(&self, position: &Position) -> Vec<CompletionItem> {
+        let mut res = vec![];
+        res.extend(self.get_functions(position));
+        res.extend(self.get_types(position));
+        res.extend(self.get_constants(position));
+        res.extend(self.get_keywords(position));
+        res
+    }
 
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem>;
     fn get_locals(
@@ -17,17 +24,10 @@ pub trait CompletionProvider {
     ) -> Vec<CompletionItem>;
     fn get_types(&self, position: &Position) -> Vec<CompletionItem>;
     fn get_constants(&self, position: &Position) -> Vec<CompletionItem>;
+    fn get_keywords(&self, position: &Position) -> Vec<CompletionItem>;
 }
 
 impl CompletionProvider for TrackedDocument {
-    fn get_completion(&self, position: &Position) -> Vec<CompletionItem> {
-        let mut res = vec![];
-        res.extend(self.get_functions(position));
-        res.extend(self.get_types(position));
-        res.extend(self.get_constants(position));
-        res
-    }
-
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];
@@ -137,11 +137,45 @@ impl CompletionProvider for TrackedDocument {
 
         res
     }
+
+    fn get_keywords(&self, _position: &Position) -> Vec<CompletionItem> {
+        [
+            "alias",
+            "break",
+            "case",
+            "const",
+            "const_assert",
+            "continue",
+            "continuing",
+            "default",
+            "diagnostic",
+            "discard",
+            "else",
+            "enable",
+            "false",
+            "fn",
+            "for",
+            "if",
+            "let",
+            "loop",
+            "override",
+            "requires",
+            "return",
+            "struct",
+            "switch",
+            "true",
+            "var",
+            "while",
+        ]
+        .into_iter()
+        .map(|it| new_completion_item(it, CompletionItemKind::KEYWORD))
+        .collect()
+    }
 }
 
-pub fn new_completion_item(symbol: String, kind: CompletionItemKind) -> CompletionItem {
+pub fn new_completion_item(symbol: impl Into<String>, kind: CompletionItemKind) -> CompletionItem {
     CompletionItem {
-        label: symbol,
+        label: symbol.into(),
         kind: Some(kind),
         ..Default::default()
     }
