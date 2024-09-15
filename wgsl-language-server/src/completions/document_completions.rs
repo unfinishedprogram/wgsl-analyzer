@@ -1,33 +1,17 @@
 use lsp_types::{CompletionItem, CompletionItemKind, Position};
 
+use super::{
+    completion_provider::{detailed_completion_item, new_completion_item},
+    CompletionProvider,
+};
+
 use crate::{
     document_tracker::TrackedDocument,
     parser::matching_bracket_index,
     range_tools::{source_location_to_range, span_to_lsp_range, RangeTools},
 };
 
-pub trait CompletionProvider {
-    fn get_completion(&self, position: &Position) -> Vec<CompletionItem> {
-        let mut res = vec![];
-        res.extend(self.get_functions(position));
-        res.extend(self.get_types(position));
-        res.extend(self.get_constants(position));
-        res.extend(self.get_keywords(position));
-        res
-    }
-
-    fn get_functions(&self, position: &Position) -> Vec<CompletionItem>;
-    fn get_locals(
-        &self,
-        position: &Position,
-        function: naga::Handle<naga::Function>,
-    ) -> Vec<CompletionItem>;
-    fn get_types(&self, position: &Position) -> Vec<CompletionItem>;
-    fn get_constants(&self, position: &Position) -> Vec<CompletionItem>;
-    fn get_keywords(&self, position: &Position) -> Vec<CompletionItem>;
-}
-
-impl CompletionProvider for TrackedDocument {
+impl TrackedDocument {
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];
@@ -137,59 +121,17 @@ impl CompletionProvider for TrackedDocument {
 
         res
     }
+}
 
-    fn get_keywords(&self, _position: &Position) -> Vec<CompletionItem> {
+impl CompletionProvider for &TrackedDocument {
+    fn get_completions(&self, position: &Position) -> Vec<CompletionItem> {
         [
-            "alias",
-            "break",
-            "case",
-            "const",
-            "const_assert",
-            "continue",
-            "continuing",
-            "default",
-            "diagnostic",
-            "discard",
-            "else",
-            "enable",
-            "false",
-            "fn",
-            "for",
-            "if",
-            "let",
-            "loop",
-            "override",
-            "requires",
-            "return",
-            "struct",
-            "switch",
-            "true",
-            "var",
-            "while",
+            self.get_functions(position),
+            self.get_types(position),
+            self.get_constants(position),
         ]
         .into_iter()
-        .map(|it| new_completion_item(it, CompletionItemKind::KEYWORD))
+        .flatten()
         .collect()
-    }
-}
-
-pub fn new_completion_item(symbol: impl Into<String>, kind: CompletionItemKind) -> CompletionItem {
-    CompletionItem {
-        label: symbol.into(),
-        kind: Some(kind),
-        ..Default::default()
-    }
-}
-
-pub fn detailed_completion_item(
-    symbol: String,
-    kind: CompletionItemKind,
-    detail: &str,
-) -> CompletionItem {
-    CompletionItem {
-        label: symbol,
-        kind: Some(kind),
-        detail: Some(detail.to_owned()),
-        ..Default::default()
     }
 }

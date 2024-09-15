@@ -7,7 +7,6 @@
 ## Features
 
 - ✅ **Syntax highlighting of WGSL files**
-- ✅ **Symbol auto-completion**
 - ✅ **Syntax validation**
 - ✅ **Correctness validation**
 - ✅ **Document outline**
@@ -15,12 +14,14 @@
   - ✅ Local Variables
   - ✅ Global Constants
   - ✅ Functions
-  - 🚧 Keywords
+  - ✅ Keywords
+  - 🚧 Builtin Functions
 
 ## Planned Features
 
 - 🚧 *Info on hover*
 - 🚧 *Improved diagnostic messages*
+- 🚧 *Goto definition*
 
 ## About
 

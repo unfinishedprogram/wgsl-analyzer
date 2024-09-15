@@ -53,3 +53,10 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Fixed
 
 - [#3](https://github.com/unfinishedprogram/wgsl-analyzer/issues/3) Is now fixed, since it was caused by a bug in a previous version of Naga
+
+## [0.4.1] 
+
+### Changed
+
+- Added keyword auto-complete
+- Refactor of autocompletion system

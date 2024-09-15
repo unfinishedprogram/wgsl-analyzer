@@ -1,4 +1,4 @@
-mod completion_provider;
+mod completions;
 mod document_tracker;
 mod parser;
 mod pretty_error;

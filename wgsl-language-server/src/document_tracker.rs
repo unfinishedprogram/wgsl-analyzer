@@ -11,7 +11,7 @@ use naga::{
 };
 
 use crate::{
-    completion_provider::CompletionProvider,
+    completions::CompletionProvider,
     range_tools::string_range,
     symbol_provider::SymbolProvider,
     wgsl_error::{parse_error_to_lsp_diagnostic, validation_error_to_lsp_diagnostic},
@@ -126,10 +126,15 @@ impl DocumentTracker {
     }
 
     pub fn get_completion(&self, url: &Uri, position: &Position) -> Vec<CompletionItem> {
+        let mut completions = vec![];
+
+        completions.extend(crate::completions::KeywordCompletions.get_completions(position));
+
         if let Some(doc) = self.documents.get(url) {
-            return doc.get_completion(position);
+            completions.extend(doc.get_completions(position))
         }
-        vec![]
+
+        completions
     }
 
     pub fn get_symbols(&self) -> Vec<DocumentSymbol> {
