@@ -60,3 +60,10 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - Added keyword auto-complete
 - Refactor of autocompletion system
+
+
+## [0.4.2] 
+
+### Fixed
+
+- Fixed incorrect error reporting locations on windows due to incorrect handling of CRLF line terminators see [issue #6](https://github.com/unfinishedprogram/wgsl-analyzer/issues/6)

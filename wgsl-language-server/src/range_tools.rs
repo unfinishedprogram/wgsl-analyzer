@@ -15,7 +15,7 @@ pub fn string_range(string: &str, range: lsp_types::Range) -> std::ops::Range<us
     string_offset(string, range.start)..string_offset(string, range.end)
 }
 
-pub fn string_offset(string: &str, position: Position) -> usize {
+fn string_offset(string: &str, position: Position) -> usize {
     let mut res = 0;
 
     for (index, line) in string.lines().enumerate() {
@@ -28,25 +28,34 @@ pub fn string_offset(string: &str, position: Position) -> usize {
     0
 }
 
-pub fn position_at_char_offset(source: &str, char_offset: usize) -> Position {
-    let mut offset = 0;
-    for (index, line) in source.lines().enumerate() {
-        if offset + line.len() >= char_offset {
-            return Position {
-                line: index as u32,
-                character: (char_offset - offset) as u32,
-            };
+pub fn position_at_byte_offset(source: &str, byte_offset: usize) -> Position {
+    let mut abs_offset = 0;
+    let mut character = 0;
+    let mut line = 0;
+
+    for char in source.chars() {
+        abs_offset += char.len_utf8();
+
+        if char == '\n' {
+            line += 1;
+            character = 0;
+        } else {
+            character += char.len_utf8();
         }
-        offset += line.len() + 1;
+
+        if abs_offset >= byte_offset {
+            break;
+        }
     }
-    Position::default()
+
+    Position::new(line, character as u32)
 }
 
 pub fn span_to_lsp_range(span: Span, source: &str) -> lsp_types::Range {
     let std::ops::Range { start, end } = span.to_range().unwrap_or_default();
 
-    let start = position_at_char_offset(source, start);
-    let end = position_at_char_offset(source, end);
+    let start = position_at_byte_offset(source, start);
+    let end = position_at_byte_offset(source, end);
 
     lsp_types::Range { start, end }
 }
@@ -60,9 +69,8 @@ pub fn source_location_to_range(
     source: &str,
 ) -> Option<lsp_types::Range> {
     let location = location?;
-
-    let start = position_at_char_offset(source, location.offset as usize);
-    let end = position_at_char_offset(source, (location.offset + location.length) as usize);
+    let start = position_at_byte_offset(source, location.offset as usize);
+    let end = position_at_byte_offset(source, (location.offset + location.length) as usize);
 
     Some(lsp_types::Range { start, end })
 }
@@ -70,8 +78,8 @@ pub fn source_location_to_range(
 pub fn new_location(range: std::ops::Range<usize>, source: &str, uri: lsp_types::Uri) -> Location {
     let std::ops::Range { start, end } = range;
 
-    let start = position_at_char_offset(source, start);
-    let end = position_at_char_offset(source, end);
+    let start = position_at_byte_offset(source, start);
+    let end = position_at_byte_offset(source, end);
 
     Location {
         uri,
