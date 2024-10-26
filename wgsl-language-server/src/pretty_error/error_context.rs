@@ -6,7 +6,7 @@ use as_type::AsType;
 use codespan_reporting::diagnostic::Diagnostic;
 use naga::{
     valid::{ExpressionError, FunctionError, ValidationError},
-    Expression, Function, Handle, Module, WithSpan,
+    Expression, Function, Handle, Module, Statement, WithSpan,
 };
 use type_print::TypePrintable;
 
@@ -128,7 +128,16 @@ impl<'a> ErrorContext<'a> {
             // } => todo!(),
             // FunctionError::NonConstructibleReturnType => todo!(),
             // FunctionError::InvalidArgumentPointerSpace { index, name, space } => todo!(),
-            // FunctionError::InstructionsAfterReturn => todo!(),
+            FunctionError::InstructionsAfterReturn => {
+                let return_span = func
+                    .body
+                    .span_iter()
+                    .find(|(stmt, _)| matches!(stmt, Statement::Return { .. }))
+                    .map(|(_, span)| *span)
+                    .unwrap_or_else(|| self.module.functions.get_span(handle));
+
+                diagnostic.with_label(label!(&return_span, "{:?}", &error))
+            }
             // FunctionError::BreakOutsideOfLoopOrSwitch => todo!(),
             // FunctionError::ContinueOutsideOfLoop => todo!(),
             // FunctionError::InvalidReturnSpot => todo!(),
