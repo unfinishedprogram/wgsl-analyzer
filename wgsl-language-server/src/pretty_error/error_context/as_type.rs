@@ -81,12 +81,23 @@ impl AsType for Handle<Expression> {
                     context.module.functions[context.function].arguments[*index as usize].ty;
                 context.module.types[ty_handle].clone()
             }
+            Expression::GlobalVariable(handle) => {
+                context.module.types[context.module.global_variables[*handle].ty].clone()
+            }
+            Expression::AccessIndex { base, index } => {
+                let base_ty = base.as_type(context);
+                match base_ty.inner {
+                    TypeInner::Struct { members, .. } => {
+                        context.module.types[members[*index as usize].ty].clone()
+                    }
+                    TypeInner::Array { base, .. } => context.module.types[base].clone(),
+                    _ => base_ty,
+                }
+            }
 
             // TODO:
-            // Expression::GlobalVariable(_) => todo!(),
             // Expression::LocalVariable(_) => todo!(),
             // Expression::Access { base, index } => todo!(),
-            // Expression::AccessIndex { base, index } => todo!(),
             // Expression::Splat { size, value } => todo!(),
             // Expression::ImageSample {
             //     image,
@@ -119,8 +130,8 @@ impl AsType for Handle<Expression> {
             //     convert,
             // } => todo!(),
             // Expression::ImageQuery { image, query } => todo!(),
-            _ => Type {
-                name: Some("*UNKNOWN*".into()),
+            other => Type {
+                name: Some(format!("UNHANDLED : {other:?}")),
                 inner: TypeInner::Scalar(Scalar {
                     kind: ScalarKind::Uint,
                     width: 0,

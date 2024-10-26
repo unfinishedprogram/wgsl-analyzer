@@ -5,7 +5,7 @@ pub mod type_print;
 use as_type::AsType;
 use codespan_reporting::diagnostic::Diagnostic;
 use naga::{
-    valid::{FunctionError, ValidationError},
+    valid::{ExpressionError, FunctionError, ValidationError},
     Expression, Function, Handle, Module, WithSpan,
 };
 use type_print::TypePrintable;
@@ -116,12 +116,10 @@ impl<'a> ErrorContext<'a> {
                         expr_type
                     ))
             }
-            _ => diagnostic.with_label(label!(
-                &self.module.functions.get_span(handle),
-                "{}",
-                &error.to_string()
-            )),
-            // FunctionError::Expression { handle, source } => todo!(),
+            FunctionError::Expression {
+                handle: expr_handle,
+                source,
+            } => self.expression_error_diagnostic(diagnostic, handle, *expr_handle, source),
             // FunctionError::ExpressionAlreadyInScope(_) => todo!(),
             // FunctionError::LocalVariable {
             //     handle,
@@ -160,7 +158,109 @@ impl<'a> ErrorContext<'a> {
             // FunctionError::InvalidSubgroup(_) => todo!(),
             // FunctionError::EmitResult(_) => todo!(),
             // FunctionError::UnvisitedExpression(_) => todo!(),
+            _ => diagnostic.with_label(label!(
+                &self.module.functions.get_span(handle),
+                "{:?}",
+                &error
+            )),
         }
+    }
+
+    fn expression_error_diagnostic(
+        &self,
+        diagnostic: Diagnostic<()>,
+        function_handle: Handle<Function>,
+        expr_handle: Handle<Expression>,
+        error: &ExpressionError,
+    ) -> Diagnostic<()> {
+        let func = &self.module.functions[function_handle];
+        let expr_span = func.expressions.get_span(expr_handle);
+        self.type_of_expression_str(function_handle, expr_handle);
+
+        match error {
+            ExpressionError::NotInScope => {
+                diagnostic.with_label(label!(&expr_span, "{}", error.to_string()))
+            }
+            ExpressionError::InvalidBaseType(handle) => diagnostic.with_label(label!(
+                &expr_span,
+                "Accessing with index {:} of type {:} can't be done",
+                self.code_in_fn(function_handle, expr_handle),
+                self.type_of_expression_str(function_handle, *handle)
+            )),
+            // ExpressionError::InvalidIndexType(handle) => todo!(),
+            // ExpressionError::NegativeIndex(handle) => todo!(),
+            // ExpressionError::IndexOutOfBounds(handle, _) => todo!(),
+            // ExpressionError::IndexMustBeConstant(handle) => todo!(),
+            // ExpressionError::FunctionArgumentDoesntExist(_) => todo!(),
+            // ExpressionError::InvalidPointerType(handle) => todo!(),
+            // ExpressionError::InvalidArrayType(handle) => todo!(),
+            // ExpressionError::InvalidRayQueryType(handle) => todo!(),
+            // ExpressionError::InvalidSplatType(handle) => todo!(),
+            // ExpressionError::InvalidVectorType(handle) => todo!(),
+            // ExpressionError::InvalidSwizzleComponent(swizzle_component, vector_size) => todo!(),
+            // ExpressionError::Compose(compose_error) => todo!(),
+            // ExpressionError::IndexableLength(indexable_length_error) => todo!(),
+            // ExpressionError::InvalidUnaryOperandType(unary_operator, handle) => todo!(),
+            ExpressionError::InvalidBinaryOperandTypes(binary_operator, handle_a, handle_b) => {
+                let type_a = self.type_of_expression_str(function_handle, *handle_a);
+                let type_b = self.type_of_expression_str(function_handle, *handle_b);
+
+                diagnostic.with_label(label_primary!(
+                    &expr_span,
+                    "Operation {binary_operator:?} can't work with types {type_a:} and {type_b:}",
+                ))
+            }
+
+            // ExpressionError::InvalidSelectTypes => todo!(),
+            // ExpressionError::InvalidBooleanVector(handle) => todo!(),
+            // ExpressionError::InvalidFloatArgument(handle) => todo!(),
+            // ExpressionError::Type(resolve_error) => todo!(),
+            // ExpressionError::ExpectedGlobalVariable => todo!(),
+            // ExpressionError::ExpectedGlobalOrArgument => todo!(),
+            // ExpressionError::ExpectedBindingArrayType(handle) => todo!(),
+            // ExpressionError::ExpectedImageType(handle) => todo!(),
+            // ExpressionError::ExpectedSamplerType(handle) => todo!(),
+            // ExpressionError::InvalidImageClass(image_class) => todo!(),
+            // ExpressionError::InvalidDerivative => todo!(),
+            // ExpressionError::InvalidImageArrayIndex => todo!(),
+            // ExpressionError::InvalidImageOtherIndex => todo!(),
+            // ExpressionError::InvalidImageArrayIndexType(handle) => todo!(),
+            // ExpressionError::InvalidImageOtherIndexType(handle) => todo!(),
+            // ExpressionError::InvalidImageCoordinateType(image_dimension, handle) => todo!(),
+            // ExpressionError::ComparisonSamplingMismatch {
+            //     image,
+            //     sampler,
+            //     has_ref,
+            // } => todo!(),
+            // ExpressionError::InvalidSampleOffsetExprType => todo!(),
+            // ExpressionError::InvalidSampleOffset(image_dimension, handle) => todo!(),
+            // ExpressionError::InvalidDepthReference(handle) => todo!(),
+            // ExpressionError::InvalidDepthSampleLevel => todo!(),
+            // ExpressionError::InvalidGatherLevel => todo!(),
+            // ExpressionError::InvalidGatherComponent(swizzle_component) => todo!(),
+            // ExpressionError::InvalidGatherDimension(image_dimension) => todo!(),
+            // ExpressionError::InvalidSampleLevelExactType(handle) => todo!(),
+            // ExpressionError::InvalidSampleLevelBiasType(handle) => todo!(),
+            // ExpressionError::InvalidSampleLevelGradientType(image_dimension, handle) => todo!(),
+            // ExpressionError::InvalidCastArgument => todo!(),
+            // ExpressionError::WrongArgumentCount(math_function) => todo!(),
+            // ExpressionError::InvalidArgumentType(math_function, _, handle) => todo!(),
+            // ExpressionError::InvalidWorkGroupUniformLoadResultType(handle) => todo!(),
+            // ExpressionError::MissingCapabilities(capabilities) => todo!(),
+            // ExpressionError::Literal(literal_error) => todo!(),
+            // ExpressionError::UnsupportedWidth(math_function, scalar_kind, _) => todo!(),
+            _ => diagnostic.with_label(label!(&expr_span, "{}", error.to_string())),
+        }
+    }
+
+    fn code_in_fn(
+        &self,
+        function_handle: Handle<Function>,
+        expr_handle: Handle<Expression>,
+    ) -> &str {
+        let func = &self.module.functions[function_handle];
+        let span = func.expressions.get_span(expr_handle);
+        &self.code[span]
     }
 }
 
