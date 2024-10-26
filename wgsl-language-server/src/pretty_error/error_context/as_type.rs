@@ -94,9 +94,13 @@ impl AsType for Handle<Expression> {
                     _ => base_ty,
                 }
             }
+            Expression::LocalVariable(handle) => {
+                let function = &context.module.functions[context.function];
+                let ty_handle = function.local_variables[*handle].ty;
+                context.module.types[ty_handle].clone()
+            }
 
             // TODO:
-            // Expression::LocalVariable(_) => todo!(),
             // Expression::Access { base, index } => todo!(),
             // Expression::Splat { size, value } => todo!(),
             // Expression::ImageSample {
