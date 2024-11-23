@@ -2,10 +2,11 @@ pub mod as_type;
 pub mod index_impl;
 pub mod type_print;
 
+use crate::block_ext::BlockExt;
 use as_type::AsType;
 use codespan_reporting::diagnostic::Diagnostic;
 use naga::{
-    valid::{ExpressionError, FunctionError, ValidationError},
+    valid::{CallError, ExpressionError, FunctionError, ValidationError},
     Expression, Function, Handle, Module, Statement, WithSpan,
 };
 use type_print::TypePrintable;
@@ -151,7 +152,66 @@ impl<'a> ErrorContext<'a> {
             // FunctionError::InvalidStoreValue(_) => todo!(),
             // FunctionError::InvalidStoreTypes { pointer, value } => todo!(),
             // FunctionError::InvalidImageStore(_) => todo!(),
-            // FunctionError::InvalidCall { function, error } => todo!(),
+            FunctionError::InvalidCall {
+                function: fn_handle,
+                error,
+            } => {
+                let called_function = &self.module.functions[*fn_handle];
+                // Since we only get the function handle, we don't know which specific call caused the error
+                // Some inner errors contain extra information that can narrow down the call site
+                let mut relevant_calls = func.body.flat_span_iter().filter(|(stmt, _)| {
+                    if let Statement::Call { function, .. } = stmt {
+                        function == fn_handle
+                    } else {
+                        false
+                    }
+                });
+
+                match error {
+                    CallError::ArgumentType {
+                        index,
+                        required,
+                        seen_expression,
+                    } => {
+                        // Since we now have the seen_expression, we can find the specific call site
+                        let call = relevant_calls.find(|(stmt, _)| {
+                            if let Statement::Call { arguments, .. } = stmt {
+                                arguments[*index] == *seen_expression
+                            } else {
+                                false
+                            }
+                        });
+
+                        let call_span = call.map(|(_, span)| span).unwrap_or_default();
+                        let argument_expr_span = func.expressions.get_span(*seen_expression);
+
+                        diagnostic
+                            .with_label(label_primary!(
+                                &call_span,
+                                "Invalid call to `{}`",
+                                called_function.name.clone().unwrap_or_default()
+                            ))
+                            .with_label(label!(
+                                &call_span,
+                                "Argument {} of `{}` must be of type `{}`",
+                                index,
+                                called_function.name.clone().unwrap_or_default(),
+                                required.print_type(&self.function_err_ctx(handle))
+                            ))
+                            .with_label(label!(
+                                &argument_expr_span,
+                                "Expression of type `{}` found",
+                                self.type_of_expression_str(handle, *seen_expression),
+                            ))
+                    }
+                    // CallError::ArgumentCount { required, seen } => todo!(),
+                    // CallError::Argument { index, source } => todo!(),
+                    // CallError::ResultAlreadyInScope(handle) => todo!(),
+                    // CallError::ResultAlreadyPopulated(handle) => todo!(),
+                    // CallError::ExpressionMismatch(handle) => todo!(),
+                    _ => diagnostic,
+                }
+            }
             // FunctionError::InvalidAtomic(_) => todo!(),
             // FunctionError::InvalidRayQueryExpression(_) => todo!(),
             // FunctionError::InvalidAccelerationStructure(_) => todo!(),
