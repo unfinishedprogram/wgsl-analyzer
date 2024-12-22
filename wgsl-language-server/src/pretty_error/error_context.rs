@@ -262,8 +262,34 @@ impl<'a> ErrorContext<'a> {
                 self.code_in_fn(function_handle, *index_handle),
                 self.type_of_expression_str(function_handle, *index_handle)
             )),
-            // ExpressionError::NegativeIndex(handle) => todo!(),
-            // ExpressionError::IndexOutOfBounds(handle, _) => todo!(),
+            ExpressionError::NegativeIndex(_) => diagnostic.with_label(label!(
+                &expr_span,
+                "Accessing {:} via a negative index is invalid",
+                self.code_in_fn(function_handle, expr_handle),
+            )),
+            ExpressionError::IndexOutOfBounds(handle, bounds) => {
+                match func.expressions[expr_handle] {
+                    naga::Expression::AccessIndex { base, index } => {
+                        let base_type = self.type_of_expression_str(function_handle, base);
+                        let base = self.code_in_fn(function_handle, base);
+                        diagnostic.with_label(label!(
+                            &expr_span,
+                            "Index {:} is out of bounds for {:} of type {:} limit: {:}",
+                            index,
+                            base,
+                            base_type,
+                            *bounds,
+                        ))
+                    }
+                    _ => diagnostic.with_label(label!(
+                        &expr_span,
+                        "Out of bounds indexing of {:} maximum: {:}, debug: {:?}",
+                        self.code_in_fn(function_handle, expr_handle),
+                        *bounds,
+                        func.expressions[*handle]
+                    )),
+                }
+            }
             // ExpressionError::IndexMustBeConstant(handle) => todo!(),
             // ExpressionError::FunctionArgumentDoesntExist(_) => todo!(),
             // ExpressionError::InvalidPointerType(handle) => todo!(),
