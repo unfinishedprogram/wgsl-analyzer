@@ -35,7 +35,7 @@ impl BlockExt for Block {
 
                         Left(body.flat_span_iter())
                     }
-                    Statement::Switch { selector, cases } => {
+                    Statement::Switch { selector: _, cases } => {
                         let mut flat_cases = Block::new();
                         for case in cases {
                             let mut body = case.body.clone();
