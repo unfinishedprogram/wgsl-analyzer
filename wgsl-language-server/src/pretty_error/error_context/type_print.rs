@@ -51,7 +51,7 @@ impl TypePrintable for TypeInner {
             TypeInner::Matrix {
                 columns,
                 rows,
-                scalar: Scalar { kind, width },
+                scalar: Scalar { kind: _, width },
             } => {
                 format!("mat{}x{}<{}>", *columns as u8, *rows as u8, width * 8)
             }
@@ -62,11 +62,15 @@ impl TypePrintable for TypeInner {
                 format!("ptr<{space:?}, {}>", base.print_type(context))
             }
             TypeInner::ValuePointer {
-                size,
+                size: _,
                 space,
                 scalar: Scalar { kind, width },
             } => format!("ptr<{space:?}, {}>", print_scalar(kind, *width)),
-            TypeInner::Array { base, size, stride } => match size {
+            TypeInner::Array {
+                base,
+                size,
+                stride: _,
+            } => match size {
                 naga::ArraySize::Constant(s) => format!("Array<{}, {s}>", base.print_type(context)),
                 naga::ArraySize::Dynamic => format!("Array<{}>", base.print_type(context)),
             },
@@ -91,7 +95,7 @@ impl TypePrintable for TypeInner {
                 }
                 naga::ArraySize::Dynamic => format!("BindingArray<{}>", base.print_type(context)),
             },
-            TypeInner::Struct { members, span } => {
+            TypeInner::Struct { members, span: _ } => {
                 let res: String = members
                     .iter()
                     .map(|member| match &member.name {

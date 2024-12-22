@@ -1,3 +1,4 @@
+mod block_ext;
 mod completions;
 mod document_tracker;
 mod parser;

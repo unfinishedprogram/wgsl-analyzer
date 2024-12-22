@@ -67,3 +67,15 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Fixed
 
 - Fixed incorrect error reporting locations on windows due to incorrect handling of CRLF line terminators see [issue #6](https://github.com/unfinishedprogram/wgsl-analyzer/issues/6)
+
+
+## [0.4.3] 
+
+### Fixed
+
+- Fixed panic when handling auto-completion after deleting lines 
+
+### Changed
+
+- Updated to naga 23
+- Improved error messages for nested expression errors

@@ -58,11 +58,13 @@ impl TrackedDocument {
                 .to_range()
                 .unwrap_or_default();
 
-            res.push(detailed_completion_item(
-                name.to_owned(),
-                CompletionItemKind::VARIABLE,
-                &self.content[range],
-            ))
+            if let Some(range_content) = self.content.get(range) {
+                res.push(detailed_completion_item(
+                    name.to_owned(),
+                    CompletionItemKind::VARIABLE,
+                    range_content,
+                ))
+            }
         }
 
         for (handle, variable) in function.local_variables.iter() {
