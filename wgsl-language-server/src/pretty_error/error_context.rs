@@ -252,11 +252,16 @@ impl<'a> ErrorContext<'a> {
             }
             ExpressionError::InvalidBaseType(handle) => diagnostic.with_label(label!(
                 &expr_span,
-                "Accessing with index {:} of type {:} can't be done",
+                "Base {:} of type {:} is not compatible with this expression",
                 self.code_in_fn(function_handle, expr_handle),
                 self.type_of_expression_str(function_handle, *handle)
             )),
-            // ExpressionError::InvalidIndexType(handle) => todo!(),
+            ExpressionError::InvalidIndexType(index_handle) => diagnostic.with_label(label!(
+                &expr_span,
+                "Accessing with index {:} of type {:} can't be done",
+                self.code_in_fn(function_handle, *index_handle),
+                self.type_of_expression_str(function_handle, *index_handle)
+            )),
             // ExpressionError::NegativeIndex(handle) => todo!(),
             // ExpressionError::IndexOutOfBounds(handle, _) => todo!(),
             // ExpressionError::IndexMustBeConstant(handle) => todo!(),
