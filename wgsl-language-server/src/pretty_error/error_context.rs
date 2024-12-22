@@ -13,7 +13,7 @@ use type_print::TypePrintable;
 
 use super::label_tools::{label_primary, label_secondary, LabelAppend};
 
-pub struct ErrorContext<'a> {
+pub struct DiagnosticContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
 }
@@ -30,7 +30,7 @@ macro_rules! label_primary {
     }
 }
 
-impl<'a> ErrorContext<'a> {
+impl<'a> DiagnosticContext<'a> {
     pub fn new(module: &'a Module, code: &'a str) -> Self {
         Self { module, code }
     }
@@ -50,8 +50,7 @@ impl<'a> ErrorContext<'a> {
 
     fn function_err_ctx(&self, function_handle: Handle<Function>) -> FunctionErrorContext {
         FunctionErrorContext {
-            module: self.module,
-            code: self.code,
+            error_ctx: self,
             function: function_handle,
         }
     }
@@ -62,7 +61,7 @@ impl<'a> ErrorContext<'a> {
         expr_handle: Handle<Expression>,
     ) -> String {
         let label_ctx = self.function_err_ctx(function_handle);
-        expr_handle.as_type(&label_ctx).print_type(&label_ctx)
+        expr_handle.as_type(&label_ctx).print_type(self)
     }
 
     fn function_error_diagnostic(
@@ -91,11 +90,7 @@ impl<'a> ErrorContext<'a> {
                 &self.module.functions.get_span(handle),
                 "Expected function `{}` to return type `{}`",
                 func.name.clone().unwrap_or_default(),
-                func.result
-                    .as_ref()
-                    .unwrap()
-                    .ty
-                    .print_type(&self.function_err_ctx(handle)),
+                func.result.as_ref().unwrap().ty.print_type(self),
             )),
             FunctionError::InvalidArgumentType { index: _, name: _ } => {
                 diagnostic.with_label(label!(
@@ -196,7 +191,7 @@ impl<'a> ErrorContext<'a> {
                                 "Argument {} of `{}` must be of type `{}`",
                                 index,
                                 called_function.name.clone().unwrap_or_default(),
-                                required.print_type(&self.function_err_ctx(handle))
+                                required.print_type(self)
                             ))
                             .with_label(label!(
                                 &argument_expr_span,
@@ -364,8 +359,12 @@ impl<'a> ErrorContext<'a> {
 }
 
 pub struct FunctionErrorContext<'a> {
-    pub module: &'a Module,
-    #[allow(unused)]
-    pub code: &'a str,
+    error_ctx: &'a DiagnosticContext<'a>,
     pub function: Handle<Function>,
+}
+
+impl FunctionErrorContext<'_> {
+    pub fn module(&self) -> &Module {
+        self.error_ctx.module
+    }
 }

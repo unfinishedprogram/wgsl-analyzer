@@ -8,6 +8,7 @@ use super::{
 use crate::{
     document_tracker::TrackedDocument,
     parser::matching_bracket_index,
+    pretty_error::error_context::{type_print::TypePrintable, DiagnosticContext},
     range_tools::{source_location_to_range, span_to_lsp_range, RangeTools},
 };
 
@@ -96,15 +97,18 @@ impl TrackedDocument {
 
         for (_, ty) in module.types.iter() {
             if let Some(name) = &ty.name {
+                let err_ctx = DiagnosticContext::new(module, &self.content);
+
                 res.push(detailed_completion_item(
                     name.to_owned(),
                     CompletionItemKind::CLASS,
-                    &format!("{:?}", ty.inner),
+                    &ty.print_type(&err_ctx),
                 ))
             }
         }
         res
     }
+
     fn get_constants(&self, _position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];

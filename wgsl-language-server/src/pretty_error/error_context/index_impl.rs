@@ -2,13 +2,13 @@ use std::ops::Index;
 
 use naga::{Constant, Expression, Function, Handle, Type};
 
-use super::{ErrorContext, FunctionErrorContext};
+use super::{DiagnosticContext, FunctionErrorContext};
 
 /*-----------
 Error Context
 -----------*/
 
-impl Index<Handle<Function>> for ErrorContext<'_> {
+impl Index<Handle<Function>> for DiagnosticContext<'_> {
     type Output = Function;
 
     fn index(&self, index: Handle<Function>) -> &Self::Output {
@@ -16,7 +16,7 @@ impl Index<Handle<Function>> for ErrorContext<'_> {
     }
 }
 
-impl Index<Handle<Type>> for ErrorContext<'_> {
+impl Index<Handle<Type>> for DiagnosticContext<'_> {
     type Output = Type;
 
     fn index(&self, index: Handle<Type>) -> &Self::Output {
@@ -24,7 +24,7 @@ impl Index<Handle<Type>> for ErrorContext<'_> {
     }
 }
 
-impl Index<Handle<Constant>> for ErrorContext<'_> {
+impl Index<Handle<Constant>> for DiagnosticContext<'_> {
     type Output = Constant;
 
     fn index(&self, index: Handle<Constant>) -> &Self::Output {
@@ -40,7 +40,7 @@ impl Index<Handle<Function>> for FunctionErrorContext<'_> {
     type Output = Function;
 
     fn index(&self, index: Handle<Function>) -> &Self::Output {
-        &self.module.functions[index]
+        &self.module().functions[index]
     }
 }
 
@@ -56,7 +56,7 @@ impl Index<Handle<Type>> for FunctionErrorContext<'_> {
     type Output = Type;
 
     fn index(&self, index: Handle<Type>) -> &Self::Output {
-        &self.module.types[index]
+        &self.module().types[index]
     }
 }
 
@@ -64,6 +64,6 @@ impl Index<Handle<Constant>> for FunctionErrorContext<'_> {
     type Output = Constant;
 
     fn index(&self, index: Handle<Constant>) -> &Self::Output {
-        &self.module.constants[index]
+        &self.module().constants[index]
     }
 }

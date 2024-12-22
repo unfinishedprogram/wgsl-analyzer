@@ -78,26 +78,26 @@ impl AsType for Handle<Expression> {
             Expression::ArrayLength(_) => scalar(ScalarKind::Uint, 4),
             Expression::FunctionArgument(index) => {
                 let ty_handle =
-                    context.module.functions[context.function].arguments[*index as usize].ty;
-                context.module.types[ty_handle].clone()
+                    context.module().functions[context.function].arguments[*index as usize].ty;
+                context.module().types[ty_handle].clone()
             }
             Expression::GlobalVariable(handle) => {
-                context.module.types[context.module.global_variables[*handle].ty].clone()
+                context.module().types[context.module().global_variables[*handle].ty].clone()
             }
             Expression::AccessIndex { base, index } => {
                 let base_ty = base.as_type(context);
                 match base_ty.inner {
                     TypeInner::Struct { members, .. } => {
-                        context.module.types[members[*index as usize].ty].clone()
+                        context.module().types[members[*index as usize].ty].clone()
                     }
-                    TypeInner::Array { base, .. } => context.module.types[base].clone(),
+                    TypeInner::Array { base, .. } => context.module().types[base].clone(),
                     _ => base_ty,
                 }
             }
             Expression::LocalVariable(handle) => {
-                let function = &context.module.functions[context.function];
+                let function = &context.module().functions[context.function];
                 let ty_handle = function.local_variables[*handle].ty;
-                context.module.types[ty_handle].clone()
+                context.module().types[ty_handle].clone()
             }
 
             // TODO:

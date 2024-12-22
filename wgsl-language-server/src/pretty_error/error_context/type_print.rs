@@ -1,27 +1,27 @@
 use naga::{FunctionResult, Handle, Scalar, ScalarKind, Type, TypeInner};
 
-use super::FunctionErrorContext;
+use super::DiagnosticContext;
 
 pub trait TypePrintable {
-    fn print_type(&self, context: &FunctionErrorContext) -> String;
+    fn print_type(&self, context: &DiagnosticContext) -> String;
 }
 
 impl TypePrintable for FunctionResult {
-    fn print_type(&self, context: &FunctionErrorContext) -> String {
+    fn print_type(&self, context: &DiagnosticContext) -> String {
         self.ty.print_type(context)
     }
 }
 
 impl TypePrintable for Handle<Type> {
-    fn print_type(&self, context: &FunctionErrorContext) -> String {
+    fn print_type(&self, context: &DiagnosticContext) -> String {
         context.module.types[*self].print_type(context)
     }
 }
 
 impl TypePrintable for Type {
-    fn print_type(&self, context: &FunctionErrorContext) -> String {
+    fn print_type(&self, context: &DiagnosticContext) -> String {
         if let Some(name) = &self.name {
-            format!("{name}:{}", self.inner.print_type(context))
+            format!("{name} {}", self.inner.print_type(context))
         } else {
             self.inner.print_type(context)
         }
@@ -29,7 +29,7 @@ impl TypePrintable for Type {
 }
 
 impl TypePrintable for TypeInner {
-    fn print_type(&self, context: &FunctionErrorContext) -> String {
+    fn print_type(&self, context: &DiagnosticContext) -> String {
         fn print_scalar(kind: &ScalarKind, width: u8) -> String {
             match kind {
                 ScalarKind::Sint => format!("i{}", width * 8),
@@ -99,10 +99,11 @@ impl TypePrintable for TypeInner {
                 let res: String = members
                     .iter()
                     .map(|member| match &member.name {
-                        Some(name) => format!("\t{name}: {},\n", member.ty.print_type(context)),
+                        Some(name) => format!("  {name}: {}", member.ty.print_type(context)),
                         None => member.ty.print_type(context),
                     })
-                    .collect();
+                    .collect::<Vec<String>>()
+                    .join(",\n");
                 ["{", &res, "}"].join("\n")
             }
         }
