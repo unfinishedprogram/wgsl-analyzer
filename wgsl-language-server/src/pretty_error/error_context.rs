@@ -290,11 +290,6 @@ impl<'a> ErrorContext<'a> {
                     )),
                 }
             }
-            ExpressionError::IndexMustBeConstant(handle) => diagnostic.with_label(label!(
-                &expr_span,
-                "Value used to index type {:} must be constant",
-                self.type_of_expression_str(function_handle, *handle)
-            )),
             // ExpressionError::FunctionArgumentDoesntExist(_) => todo!(),
             // ExpressionError::InvalidPointerType(handle) => todo!(),
             // ExpressionError::InvalidArrayType(handle) => todo!(),
