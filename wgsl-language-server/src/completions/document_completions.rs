@@ -1,4 +1,6 @@
 use lsp_types::{CompletionItem, CompletionItemKind, Position};
+use naga::{Expression, Function, Handle};
+use serde::de::Expected;
 
 use super::{
     completion_provider::{detailed_completion_item, new_completion_item},
@@ -9,10 +11,32 @@ use crate::{
     document_tracker::TrackedDocument,
     parser::matching_bracket_index,
     pretty_error::error_context::{type_print::TypePrintable, DiagnosticContext},
-    range_tools::{source_location_to_range, span_to_lsp_range, RangeTools},
+    range_tools::{source_location_to_range, span_to_lsp_range, string_offset, RangeTools},
 };
 
 impl TrackedDocument {
+    fn get_containing_function(&self, position: &Position) -> Option<Handle<Function>> {
+        let Some(module) = &self.last_valid_module else {
+            return None;
+        };
+
+        for (handle, _) in module.functions.iter() {
+            let mut location = module.functions.get_span(handle).location(&self.content);
+
+            if let Some(close) = matching_bracket_index(&self.content, location.offset as usize) {
+                location.length = close as u32 - location.offset;
+            }
+
+            let range = source_location_to_range(Some(location), &self.content).unwrap();
+
+            if range.contains_line(position) {
+                return Some(handle);
+            }
+        }
+
+        None
+    }
+
     fn get_functions(&self, position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];
@@ -20,27 +44,19 @@ impl TrackedDocument {
 
         let mut res = vec![];
 
-        for (handle, func) in module.functions.iter() {
+        if let Some(current_function) = self.get_containing_function(position) {
+            res.extend(self.get_locals(position, current_function));
+        }
+
+        for (_, func) in module.functions.iter() {
             if let Some(name) = func.name.clone() {
-                let mut location = module.functions.get_span(handle).location(&self.content);
-
-                if let Some(close) = matching_bracket_index(&self.content, location.offset as usize)
-                {
-                    location.length = close as u32 - location.offset;
-                }
-
-                let range = source_location_to_range(Some(location), &self.content).unwrap();
-
-                if range.contains_line(position) {
-                    res.extend(self.get_locals(position, handle));
-                }
-
                 res.push(new_completion_item(name, CompletionItemKind::FUNCTION))
             }
         }
 
         res
     }
+
     fn get_locals(
         &self,
         position: &Position,
@@ -88,6 +104,7 @@ impl TrackedDocument {
 
         res
     }
+
     fn get_types(&self, _position: &Position) -> Vec<CompletionItem> {
         let Some(module) = &self.last_valid_module else {
             return vec![];
