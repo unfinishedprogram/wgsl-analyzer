@@ -90,7 +90,10 @@ impl<'a> DiagnosticContext<'a> {
                 &self.module.functions.get_span(handle),
                 "Expected function `{}` to return type `{}`",
                 func.name.clone().unwrap_or_default(),
-                func.result.as_ref().unwrap().ty.print_type(self),
+                func.result
+                    .as_ref()
+                    .map(|it| it.ty.print_type(self))
+                    .unwrap_or("void".to_string())
             )),
             FunctionError::InvalidArgumentType { index: _, name: _ } => {
                 diagnostic.with_label(label!(
