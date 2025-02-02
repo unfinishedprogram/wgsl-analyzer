@@ -70,10 +70,14 @@ impl TypePrintable for TypeInner {
                 base,
                 size,
                 stride: _,
-            } => match size {
-                naga::ArraySize::Constant(s) => format!("Array<{}, {s}>", base.print_type(context)),
-                naga::ArraySize::Dynamic => format!("Array<{}>", base.print_type(context)),
-            },
+            } => {
+                let base_type = base.print_type(context);
+                match size {
+                    naga::ArraySize::Constant(s) => format!("Array<{base_type}, {s}>"),
+                    naga::ArraySize::Dynamic => format!("Array<{base_type}>"),
+                    naga::ArraySize::Pending(s) => format!("Array<{base_type}, {s:?}>"),
+                }
+            }
 
             // TODO: Improve type printing
             TypeInner::Image {
@@ -89,12 +93,15 @@ impl TypePrintable for TypeInner {
             .into(),
             TypeInner::AccelerationStructure => "AccelerationStructure".into(),
             TypeInner::RayQuery => "RayQuery".into(),
-            TypeInner::BindingArray { base, size } => match size {
-                naga::ArraySize::Constant(s) => {
-                    format!("BindingArray<{}, {s}>", base.print_type(context))
+            TypeInner::BindingArray { base, size } => {
+                let base_type = base.print_type(context);
+
+                match size {
+                    naga::ArraySize::Constant(s) => format!("BindingArray<{base_type}, {s}>"),
+                    naga::ArraySize::Dynamic => format!("BindingArray<{base_type}>"),
+                    naga::ArraySize::Pending(s) => format!("BindingArray<{base_type}, {s:?}>"),
                 }
-                naga::ArraySize::Dynamic => format!("BindingArray<{}>", base.print_type(context)),
-            },
+            }
             TypeInner::Struct { members, span: _ } => {
                 let res: String = members
                     .iter()

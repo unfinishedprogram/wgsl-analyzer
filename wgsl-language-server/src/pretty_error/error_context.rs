@@ -298,13 +298,18 @@ impl<'a> DiagnosticContext<'a> {
             // ExpressionError::Compose(compose_error) => todo!(),
             // ExpressionError::IndexableLength(indexable_length_error) => todo!(),
             // ExpressionError::InvalidUnaryOperandType(unary_operator, handle) => todo!(),
-            ExpressionError::InvalidBinaryOperandTypes(binary_operator, handle_a, handle_b) => {
-                let type_a = self.type_of_expression_str(function_handle, *handle_a);
-                let type_b = self.type_of_expression_str(function_handle, *handle_b);
+            ExpressionError::InvalidBinaryOperandTypes {
+                op,
+                lhs_type,
+                rhs_type,
+                ..
+            } => {
+                let type_a = lhs_type.print_type(self);
+                let type_b = rhs_type.print_type(self);
 
                 diagnostic.with_label(label_primary!(
                     &expr_span,
-                    "Operation {binary_operator:?} can't work with types {type_a:} and {type_b:}",
+                    "Operation {op:?} can't work with types {type_a:} and {type_b:}",
                 ))
             }
 
