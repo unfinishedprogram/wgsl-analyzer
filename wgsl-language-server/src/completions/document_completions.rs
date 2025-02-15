@@ -165,23 +165,39 @@ impl TrackedDocument {
         res
     }
 
-    fn get_proceeding_expr_type(
+    fn get_proceeding_popery_access(
         &self,
         position: &Position,
         function: &naga::Function,
     ) -> Option<Type> {
+        let ctx = self.module_context()?;
         let line = self
             .content
             .split('\n')
             .nth(position.line as usize)
             .unwrap();
 
-        let re = Regex::new(r"^.*?(\w+)(?:\[[^\[\]]+\])*\.?").unwrap();
+        let re = Regex::new(r"^.*?((?:\w+\.)*\w+)(?:\[[^\[\]]+\])*\.?").unwrap();
         let name = re.captures_iter(line).last()?.get(1)?.as_str();
+        let mut access_iter = name.split(".");
 
-        self.module_context()?
-            .function_ctx(function)
-            .get_type_by_name(name)
+        let base = access_iter.next()?;
+        let mut base_type = ctx.function_ctx(function).get_type_by_name(base)?;
+
+        for prop in access_iter {
+            match &base_type.inner.clone() {
+                naga::TypeInner::Struct { members, .. } => {
+                    for member in members {
+                        if member.name.as_ref().is_some_and(|it| it == prop) {
+                            base_type = ctx.module.types[member.ty].clone();
+                        }
+                    }
+                }
+                _ => break,
+            }
+        }
+
+        Some(base_type)
     }
 
     fn get_property_access(&self, position: &Position) -> Vec<CompletionItem> {
@@ -189,19 +205,19 @@ impl TrackedDocument {
             return vec![];
         };
 
-        let Some(expr_type) = self.get_proceeding_expr_type(position, function) else {
+        let Some(expr_type) = self.get_proceeding_popery_access(position, function) else {
             return vec![];
         };
 
         match expr_type.inner {
             naga::TypeInner::Scalar(_) => {}
             naga::TypeInner::Image { .. } => {}
-            naga::TypeInner::Sampler { comparison } => {}
+            naga::TypeInner::Sampler { .. } => {}
             naga::TypeInner::AccelerationStructure => {}
             naga::TypeInner::RayQuery => {}
             naga::TypeInner::BindingArray { .. } => {}
-            naga::TypeInner::Atomic(scalar) => {}
-            naga::TypeInner::Pointer { base, space } => {}
+            naga::TypeInner::Atomic(_) => {}
+            naga::TypeInner::Pointer { .. } => {}
             naga::TypeInner::Array { .. } => {}
             naga::TypeInner::ValuePointer { .. } => {}
             naga::TypeInner::Vector { size, .. } | naga::TypeInner::Matrix { rows: size, .. } => {
