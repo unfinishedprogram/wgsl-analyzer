@@ -12,6 +12,7 @@ use naga::{
 
 use crate::{
     completions::CompletionProvider,
+    pretty_error::error_context::ModuleContext,
     range_tools::string_range,
     symbol_provider::SymbolProvider,
     wgsl_error::{parse_error_to_lsp_diagnostic, validation_error_to_lsp_diagnostic},
@@ -61,6 +62,13 @@ impl TrackedDocument {
             ),
             _ => vec![],
         }
+    }
+
+    pub fn module_context(&self) -> Option<ModuleContext> {
+        self.last_valid_module.as_ref().map(|module| ModuleContext {
+            module,
+            code: &self.content,
+        })
     }
 }
 

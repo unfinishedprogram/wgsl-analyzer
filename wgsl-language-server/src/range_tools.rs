@@ -22,7 +22,7 @@ pub fn string_offset(string: &str, position: &Position) -> usize {
         if index == position.line as usize {
             return res + position.character as usize;
         }
-        res += line.len();
+        res += line.len() + 1;
     }
 
     0

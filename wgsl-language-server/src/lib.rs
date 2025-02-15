@@ -93,7 +93,6 @@ impl WGSLLanguageServer {
 impl WGSLLanguageServer {
     fn update_diagnostics(&mut self) {
         let diagnostics = self.get_diagnostics();
-        log(&format!("{diagnostics:?}"));
         self.send_diagnostics(diagnostics)
     }
 

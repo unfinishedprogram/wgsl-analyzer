@@ -1,17 +1,24 @@
-import { ExtensionContext, RelativePattern, WorkspaceFolder, WorkspaceFoldersChangeEvent, languages, workspace } from "vscode";
-import { join } from 'path';
+import {
+  ExtensionContext,
+  RelativePattern,
+  WorkspaceFolder,
+  WorkspaceFoldersChangeEvent,
+  languages,
+  workspace,
+} from "vscode";
+import { join } from "path";
 import {
   LanguageClient,
   LanguageClientOptions,
-  TransportKind
-} from 'vscode-languageclient/node';
+  TransportKind,
+} from "vscode-languageclient/node";
 
-const extensionName = 'wgsl-analyzer';
+const extensionName = "wgsl-analyzer";
 
 const clients: Map<string, LanguageClient> = new Map();
 
 export async function activate(context: ExtensionContext) {
-  console.info("Starting WGSL Language Support...")
+  console.info("Starting WGSL Language Support...");
 
   const folders = workspace.workspaceFolders || [];
   for (const folder of folders) await startClient(folder, context);
@@ -19,18 +26,16 @@ export async function activate(context: ExtensionContext) {
 }
 
 export async function deactivate(): Promise<void> {
-  await Promise.all(
-    [...clients.values()].map((client) => client.stop())
-  );
+  await Promise.all([...clients.values()].map((client) => client.stop()));
 }
 
 async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
-  const server = context.asAbsolutePath(join('dist', 'server.js'));
+  const server = context.asAbsolutePath(join("dist", "server.js"));
   console.error("Starting client");
   console.error("Server Module URI", server);
 
   const createChangeWatcher = workspace.createFileSystemWatcher(
-    new RelativePattern(folder, '**/*.wgsl'),
+    new RelativePattern(folder, "**/*.wgsl"),
     false,
     false,
     true
@@ -39,7 +44,10 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
   context.subscriptions.push(createChangeWatcher);
 
   const run_opts = { module: server, transport: TransportKind.ipc };
-  const debug_opts = { ...run_opts, options: { execArgv: ['--nolazy', `--inspect=${6011 + clients.size}`] } }
+  const debug_opts = {
+    ...run_opts,
+    options: { execArgv: ["--nolazy", `--inspect=${6011 + clients.size}`] },
+  };
 
   const serverOpts = {
     run: run_opts,
@@ -48,7 +56,7 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
 
   const clientOpts: LanguageClientOptions = {
     documentSelector: [
-      { language: 'wgsl', pattern: `${folder.uri.fsPath}/**/*.wgsl` },
+      { language: "wgsl", pattern: `${folder.uri.fsPath}/**/*.wgsl` },
     ],
     diagnosticCollectionName: extensionName,
     workspaceFolder: folder,
@@ -63,7 +71,6 @@ async function stopClient(folder: string) {
   await clients.get(folder)?.stop();
   clients.delete(folder);
 }
-
 
 function updateClients(context: ExtensionContext) {
   return async function ({ added, removed }: WorkspaceFoldersChangeEvent) {

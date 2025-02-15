@@ -1,4 +1,5 @@
 pub mod as_type;
+mod ident_query;
 pub mod index_impl;
 pub mod type_print;
 
@@ -13,7 +14,7 @@ use type_print::TypePrintable;
 
 use super::label_tools::{label_primary, label_secondary, LabelAppend};
 
-pub struct DiagnosticContext<'a> {
+pub struct ModuleContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
 }
@@ -30,7 +31,7 @@ macro_rules! label_primary {
     }
 }
 
-impl<'a> DiagnosticContext<'a> {
+impl<'a> ModuleContext<'a> {
     pub fn new(module: &'a Module, code: &'a str) -> Self {
         Self { module, code }
     }
@@ -48,11 +49,15 @@ impl<'a> DiagnosticContext<'a> {
         }
     }
 
-    fn function_err_ctx(&self, function_handle: Handle<Function>) -> FunctionErrorContext {
-        FunctionErrorContext {
+    pub fn function_ctx(&'a self, function: &'a Function) -> FunctionContext<'a> {
+        FunctionContext {
             error_ctx: self,
-            function: function_handle,
+            function,
         }
+    }
+
+    pub fn function_ctx_from_handle(&self, function_handle: Handle<Function>) -> FunctionContext {
+        self.function_ctx(&self.module.functions[function_handle])
     }
 
     fn type_of_expression_str(
@@ -60,7 +65,7 @@ impl<'a> DiagnosticContext<'a> {
         function_handle: Handle<Function>,
         expr_handle: Handle<Expression>,
     ) -> String {
-        let label_ctx = self.function_err_ctx(function_handle);
+        let label_ctx = self.function_ctx_from_handle(function_handle);
         expr_handle.as_type(&label_ctx).print_type(self)
     }
 
@@ -366,12 +371,12 @@ impl<'a> DiagnosticContext<'a> {
     }
 }
 
-pub struct FunctionErrorContext<'a> {
-    error_ctx: &'a DiagnosticContext<'a>,
-    pub function: Handle<Function>,
+pub struct FunctionContext<'a> {
+    error_ctx: &'a ModuleContext<'a>,
+    pub function: &'a Function,
 }
 
-impl FunctionErrorContext<'_> {
+impl FunctionContext<'_> {
     pub fn module(&self) -> &Module {
         self.error_ctx.module
     }

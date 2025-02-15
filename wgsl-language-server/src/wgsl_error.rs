@@ -3,7 +3,7 @@ use lsp_types::{DiagnosticRelatedInformation, Uri};
 use naga::{front::wgsl::ParseError, SourceLocation};
 
 use crate::{
-    pretty_error::error_context::DiagnosticContext,
+    pretty_error::error_context::ModuleContext,
     range_tools::{new_location, range_to_span, source_location_to_range, span_to_lsp_range},
 };
 
@@ -95,7 +95,7 @@ pub fn validation_error_to_codespan_diagnostic(
     src: &str,
     module: &naga::Module,
 ) -> codespan_reporting::diagnostic::Diagnostic<()> {
-    let ctx = DiagnosticContext::new(module, src);
+    let ctx = ModuleContext::new(module, src);
 
     ctx.validation_error_diagnostic(err)
 }

@@ -1,25 +1,25 @@
 use naga::{FunctionResult, Handle, Scalar, ScalarKind, Type, TypeInner};
 
-use super::DiagnosticContext;
+use super::ModuleContext;
 
 pub trait TypePrintable {
-    fn print_type(&self, context: &DiagnosticContext) -> String;
+    fn print_type(&self, context: &ModuleContext) -> String;
 }
 
 impl TypePrintable for FunctionResult {
-    fn print_type(&self, context: &DiagnosticContext) -> String {
+    fn print_type(&self, context: &ModuleContext) -> String {
         self.ty.print_type(context)
     }
 }
 
 impl TypePrintable for Handle<Type> {
-    fn print_type(&self, context: &DiagnosticContext) -> String {
+    fn print_type(&self, context: &ModuleContext) -> String {
         context.module.types[*self].print_type(context)
     }
 }
 
 impl TypePrintable for Type {
-    fn print_type(&self, context: &DiagnosticContext) -> String {
+    fn print_type(&self, context: &ModuleContext) -> String {
         if let Some(name) = &self.name {
             format!("{name} {}", self.inner.print_type(context))
         } else {
@@ -29,7 +29,7 @@ impl TypePrintable for Type {
 }
 
 impl TypePrintable for TypeInner {
-    fn print_type(&self, context: &DiagnosticContext) -> String {
+    fn print_type(&self, context: &ModuleContext) -> String {
         fn print_scalar(kind: &ScalarKind, width: u8) -> String {
             match kind {
                 ScalarKind::Sint => format!("i{}", width * 8),
