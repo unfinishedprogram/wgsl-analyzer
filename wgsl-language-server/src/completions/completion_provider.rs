@@ -13,14 +13,14 @@ pub fn new_completion_item(symbol: impl Into<String>, kind: CompletionItemKind) 
 }
 
 pub fn detailed_completion_item(
-    symbol: String,
+    symbol: impl Into<String>,
     kind: CompletionItemKind,
-    detail: &str,
+    detail: impl Into<String>,
 ) -> CompletionItem {
     CompletionItem {
-        label: symbol,
+        label: symbol.into(),
         kind: Some(kind),
-        detail: Some(detail.to_owned()),
+        detail: Some(detail.into()),
         ..Default::default()
     }
 }

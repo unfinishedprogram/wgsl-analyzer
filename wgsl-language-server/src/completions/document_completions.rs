@@ -121,7 +121,7 @@ impl TrackedDocument {
                 res.push(detailed_completion_item(
                     name.to_owned(),
                     CompletionItemKind::CLASS,
-                    &ty.print_type(&err_ctx),
+                    ty.print_type(&err_ctx),
                 ))
             }
         }
@@ -164,20 +164,19 @@ impl TrackedDocument {
         res
     }
 
-
     fn get_property_access(&self, position: &Position) -> Vec<CompletionItem> {
         let Some(ctx) = self.module_context() else {
             return vec![];
         };
-        
+
         let Some(function) = self.get_containing_function(position) else {
             return vec![];
         };
-    
+
         let Some(expr_type) = ctx.get_proceeding_popery_access_type(position, function) else {
             return vec![];
         };
-    
+
         match expr_type {
             naga::TypeInner::Scalar(_) => {}
             naga::TypeInner::Image { .. } => {}
@@ -207,7 +206,7 @@ impl TrackedDocument {
                     .collect()
             }
         }
-    
+
         vec![]
     }
 }
@@ -230,6 +229,7 @@ impl CompletionProvider for &TrackedDocument {
             completions.extend(self.get_types(position));
             completions.extend(self.get_globals(position));
             completions.extend(crate::completions::KeywordCompletions.get_completions(position));
+            completions.extend(crate::completions::BuiltinCompletions.get_completions(position));
         }
 
         completions
