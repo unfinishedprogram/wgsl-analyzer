@@ -21,7 +21,6 @@
     "build-server-dev": "npx esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
     "build-all": "npm run build-wasm; npm run build-server; npm run build-client",
     "build-all-dev": "npm run build-wasm-dev; npm run build-server-dev; npm run build-client-dev",
-    "vscode:prepublish": "npm run build-all",
     "publish": "npx vsce publish"
   },
   "main": "./dist/extension.js",
@@ -61,7 +60,7 @@
     "@vscode/vsce": "^3.2.2",
     "esbuild": "^0.18.9",
     "@types/vscode": "^1.1.37",
-    "wasm-pack": "^0.0.0"
+    "wasm-pack": "^0.13.1"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0",
