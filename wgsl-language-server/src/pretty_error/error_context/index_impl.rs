@@ -2,13 +2,13 @@ use std::ops::Index;
 
 use naga::{Constant, Expression, Function, Handle, Type};
 
-use super::{ErrorContext, FunctionErrorContext};
+use super::{FunctionContext, ModuleContext};
 
 /*-----------
 Error Context
 -----------*/
 
-impl Index<Handle<Function>> for ErrorContext<'_> {
+impl Index<Handle<Function>> for ModuleContext<'_> {
     type Output = Function;
 
     fn index(&self, index: Handle<Function>) -> &Self::Output {
@@ -16,7 +16,7 @@ impl Index<Handle<Function>> for ErrorContext<'_> {
     }
 }
 
-impl Index<Handle<Type>> for ErrorContext<'_> {
+impl Index<Handle<Type>> for ModuleContext<'_> {
     type Output = Type;
 
     fn index(&self, index: Handle<Type>) -> &Self::Output {
@@ -24,7 +24,7 @@ impl Index<Handle<Type>> for ErrorContext<'_> {
     }
 }
 
-impl Index<Handle<Constant>> for ErrorContext<'_> {
+impl Index<Handle<Constant>> for ModuleContext<'_> {
     type Output = Constant;
 
     fn index(&self, index: Handle<Constant>) -> &Self::Output {
@@ -36,34 +36,34 @@ impl Index<Handle<Constant>> for ErrorContext<'_> {
 Label Context
 -----------*/
 
-impl Index<Handle<Function>> for FunctionErrorContext<'_> {
+impl Index<Handle<Function>> for FunctionContext<'_> {
     type Output = Function;
 
     fn index(&self, index: Handle<Function>) -> &Self::Output {
-        &self.module.functions[index]
+        &self.module().functions[index]
     }
 }
 
-impl Index<Handle<Expression>> for FunctionErrorContext<'_> {
+impl Index<Handle<Expression>> for FunctionContext<'_> {
     type Output = Expression;
 
     fn index(&self, index: Handle<Expression>) -> &Self::Output {
-        &self[self.function].expressions[index]
+        &self.function.expressions[index]
     }
 }
 
-impl Index<Handle<Type>> for FunctionErrorContext<'_> {
+impl Index<Handle<Type>> for FunctionContext<'_> {
     type Output = Type;
 
     fn index(&self, index: Handle<Type>) -> &Self::Output {
-        &self.module.types[index]
+        &self.module().types[index]
     }
 }
 
-impl Index<Handle<Constant>> for FunctionErrorContext<'_> {
+impl Index<Handle<Constant>> for FunctionContext<'_> {
     type Output = Constant;
 
     fn index(&self, index: Handle<Constant>) -> &Self::Output {
-        &self.module.constants[index]
+        &self.module().constants[index]
     }
 }

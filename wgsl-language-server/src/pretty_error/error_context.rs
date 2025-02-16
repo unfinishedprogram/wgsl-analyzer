@@ -1,4 +1,5 @@
 pub mod as_type;
+mod ident_query;
 pub mod index_impl;
 pub mod type_print;
 
@@ -13,7 +14,7 @@ use type_print::TypePrintable;
 
 use super::label_tools::{label_primary, label_secondary, LabelAppend};
 
-pub struct ErrorContext<'a> {
+pub struct ModuleContext<'a> {
     pub module: &'a Module,
     pub code: &'a str,
 }
@@ -30,7 +31,7 @@ macro_rules! label_primary {
     }
 }
 
-impl<'a> ErrorContext<'a> {
+impl<'a> ModuleContext<'a> {
     pub fn new(module: &'a Module, code: &'a str) -> Self {
         Self { module, code }
     }
@@ -48,12 +49,15 @@ impl<'a> ErrorContext<'a> {
         }
     }
 
-    fn function_err_ctx(&self, function_handle: Handle<Function>) -> FunctionErrorContext {
-        FunctionErrorContext {
-            module: self.module,
-            code: self.code,
-            function: function_handle,
+    pub fn function_ctx(&'a self, function: &'a Function) -> FunctionContext<'a> {
+        FunctionContext {
+            error_ctx: self,
+            function,
         }
+    }
+
+    pub fn function_ctx_from_handle(&self, function_handle: Handle<Function>) -> FunctionContext {
+        self.function_ctx(&self.module.functions[function_handle])
     }
 
     fn type_of_expression_str(
@@ -61,8 +65,8 @@ impl<'a> ErrorContext<'a> {
         function_handle: Handle<Function>,
         expr_handle: Handle<Expression>,
     ) -> String {
-        let label_ctx = self.function_err_ctx(function_handle);
-        expr_handle.as_type(&label_ctx).print_type(&label_ctx)
+        let label_ctx = self.function_ctx_from_handle(function_handle);
+        expr_handle.as_type(&label_ctx).print_type(self)
     }
 
     fn function_error_diagnostic(
@@ -93,9 +97,8 @@ impl<'a> ErrorContext<'a> {
                 func.name.clone().unwrap_or_default(),
                 func.result
                     .as_ref()
-                    .unwrap()
-                    .ty
-                    .print_type(&self.function_err_ctx(handle)),
+                    .map(|it| it.ty.print_type(self))
+                    .unwrap_or("void".to_string())
             )),
             FunctionError::InvalidArgumentType { index: _, name: _ } => {
                 diagnostic.with_label(label!(
@@ -196,7 +199,7 @@ impl<'a> ErrorContext<'a> {
                                 "Argument {} of `{}` must be of type `{}`",
                                 index,
                                 called_function.name.clone().unwrap_or_default(),
-                                required.print_type(&self.function_err_ctx(handle))
+                                required.print_type(self)
                             ))
                             .with_label(label!(
                                 &argument_expr_span,
@@ -300,13 +303,18 @@ impl<'a> ErrorContext<'a> {
             // ExpressionError::Compose(compose_error) => todo!(),
             // ExpressionError::IndexableLength(indexable_length_error) => todo!(),
             // ExpressionError::InvalidUnaryOperandType(unary_operator, handle) => todo!(),
-            ExpressionError::InvalidBinaryOperandTypes(binary_operator, handle_a, handle_b) => {
-                let type_a = self.type_of_expression_str(function_handle, *handle_a);
-                let type_b = self.type_of_expression_str(function_handle, *handle_b);
+            ExpressionError::InvalidBinaryOperandTypes {
+                op,
+                lhs_type,
+                rhs_type,
+                ..
+            } => {
+                let type_a = lhs_type.print_type(self);
+                let type_b = rhs_type.print_type(self);
 
                 diagnostic.with_label(label_primary!(
                     &expr_span,
-                    "Operation {binary_operator:?} can't work with types {type_a:} and {type_b:}",
+                    "Operation {op:?} can't work with types {type_a:} and {type_b:}",
                 ))
             }
 
@@ -363,9 +371,13 @@ impl<'a> ErrorContext<'a> {
     }
 }
 
-pub struct FunctionErrorContext<'a> {
-    pub module: &'a Module,
-    #[allow(unused)]
-    pub code: &'a str,
-    pub function: Handle<Function>,
+pub struct FunctionContext<'a> {
+    error_ctx: &'a ModuleContext<'a>,
+    pub function: &'a Function,
+}
+
+impl FunctionContext<'_> {
+    pub fn module(&self) -> &Module {
+        self.error_ctx.module
+    }
 }

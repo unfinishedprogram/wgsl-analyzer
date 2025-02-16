@@ -2,6 +2,7 @@
 .vscode-test/**
 .gitignore
 .gitattributes
+.github
 src
 wgsl-language-server
 node_modules

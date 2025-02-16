@@ -15,7 +15,8 @@
   - ✅ Global Constants
   - ✅ Functions
   - ✅ Keywords
-  - 🚧 Builtin Functions
+  - ✅ Builtin Functions
+  - ✅ Property Access
 
 ## Planned Features
 
