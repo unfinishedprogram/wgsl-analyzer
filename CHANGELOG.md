@@ -29,6 +29,7 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Added
 
 - `DocumentSymbolProvider` for document outline view
+
 ### Changed
 
 - Improved diagnostic messages
@@ -79,3 +80,17 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - Updated to naga 23
 - Improved error messages for nested expression errors
+
+
+## [0.5.0]
+
+### Added
+
+- Type aware autocompletion of property access
+- Autocompletion for builtin functions
+
+### Fixed
+
+- Updated Naga version to 24
+- Adjustments to diagnostic messages
+- Autocompletion is now more context aware
