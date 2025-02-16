@@ -27,7 +27,7 @@ jobs:
       if: github.ref == 'refs/heads/main'
 
     - name: VSCE Package Preview
-      run: npx vsce package --pre-release
+      run: npm version prerelease --preid preview && npx vsce package --pre-release
       if: github.ref != 'refs/heads/main'
 
     - name: Upload Extension Artifact
