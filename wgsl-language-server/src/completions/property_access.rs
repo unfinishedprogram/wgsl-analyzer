@@ -1,10 +1,9 @@
 use std::sync::LazyLock;
-
 use lsp_types::Position;
 use naga::TypeInner;
 use regex::Regex;
 
-use crate::{log, pretty_error::error_context::{FunctionContext, ModuleContext}};
+use crate::pretty_error::error_context::{FunctionContext, ModuleContext};
 
 static RE_ACCESS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(^\w+|\[[^\]]+\]|\.\w+)").unwrap());
 
@@ -84,7 +83,6 @@ impl ModuleContext<'_> {
 
         let accesses = parse_property_accesses(line);
 
-        log!("Accesses: {:?}", accesses);
         self.function_ctx(function).evaluate_property_access_type(&accesses)
     }
 

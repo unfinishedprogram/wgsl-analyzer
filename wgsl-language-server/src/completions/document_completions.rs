@@ -229,6 +229,7 @@ impl CompletionProvider for &TrackedDocument {
             completions.extend(self.get_functions(position));
             completions.extend(self.get_types(position));
             completions.extend(self.get_globals(position));
+            completions.extend(crate::completions::KeywordCompletions.get_completions(position));
         }
 
         completions

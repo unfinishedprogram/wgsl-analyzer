@@ -136,8 +136,6 @@ impl DocumentTracker {
     pub fn get_completion(&self, url: &Uri, position: &Position) -> Vec<CompletionItem> {
         let mut completions = vec![];
 
-        completions.extend(crate::completions::KeywordCompletions.get_completions(position));
-
         if let Some(doc) = self.documents.get(url) {
             completions.extend(doc.get_completions(position))
         }
