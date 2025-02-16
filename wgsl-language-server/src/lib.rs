@@ -7,6 +7,19 @@ mod range_tools;
 mod symbol_provider;
 mod wgsl_error;
 
+
+mod macros {
+    macro_rules! log {
+        ($($arg:tt)*) => {{
+            crate::console_log(&format!($($arg)*));
+        }};
+    }
+
+    pub(crate) use log;
+}
+
+pub(crate) use macros::log;
+
 use document_tracker::DocumentTracker;
 
 use lsp_types::{
@@ -24,9 +37,6 @@ extern "C" {
     fn console_log(s: &str);
 }
 
-fn log(s: &str) {
-    console_log(s)
-}
 
 #[wasm_bindgen]
 pub struct WGSLLanguageServer {
@@ -39,7 +49,7 @@ impl WGSLLanguageServer {
     #[wasm_bindgen(constructor)]
     pub fn new(send_diagnostics_callback: &js_sys::Function) -> Self {
         console_error_panic_hook::set_once();
-        log("WGSL Language Server Created");
+        log!("WGSL Language Server Created");
         Self {
             documents: DocumentTracker::new(),
             send_diagnostics_callback: send_diagnostics_callback.clone(),
@@ -48,7 +58,7 @@ impl WGSLLanguageServer {
 
     #[wasm_bindgen(js_name = onCompletion)]
     pub fn on_completion(&mut self, params: JsValue) -> String {
-        log("Request for completion");
+        log!("Request for completion");
         let TextDocumentPositionParams {
             text_document,
             position,
@@ -60,7 +70,7 @@ impl WGSLLanguageServer {
 
     #[wasm_bindgen(js_name = onDocumentSymbol)]
     pub fn on_document_symbol(&mut self, _params: JsValue) -> String {
-        log("Request for document symbol");
+        log!("Request for document symbol");
         let res = self.documents.get_symbols();
         serde_json::to_string(&res).unwrap()
     }
@@ -85,7 +95,7 @@ impl WGSLLanguageServer {
             }
             "textDocument/didSave" => {}
             "initialized" => {}
-            _ => log(&format!("on_notification {} {:?}", method, params)),
+            _ => log!("on_notification {} {:?}", method, params),
         }
     }
 }
@@ -101,10 +111,7 @@ impl WGSLLanguageServer {
         for params in diagnostics {
             let params = &to_value(&params).unwrap();
             if let Err(e) = self.send_diagnostics_callback.call1(this, params) {
-                log(&format!(
-                    "send_diagnostics params:\n\t{:?}\n\tJS error: {:?}",
-                    params, e
-                ));
+                log!("send_diagnostics params:\n\t{:?}\n\tJS error: {:?}", params, e);
             }
         }
     }

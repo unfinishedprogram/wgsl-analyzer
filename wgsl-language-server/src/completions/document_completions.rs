@@ -1,6 +1,5 @@
 use lsp_types::{CompletionItem, CompletionItemKind, Position};
-use naga::{Function, Span, Type};
-use regex::Regex;
+use naga::{Function, Span};
 
 use super::{
     completion_provider::{detailed_completion_item, new_completion_item},
@@ -165,51 +164,21 @@ impl TrackedDocument {
         res
     }
 
-    fn get_proceeding_popery_access(
-        &self,
-        position: &Position,
-        function: &naga::Function,
-    ) -> Option<Type> {
-        let ctx = self.module_context()?;
-        let line = self
-            .content
-            .split('\n')
-            .nth(position.line as usize)
-            .unwrap();
-
-        let re = Regex::new(r"^.*?((?:\w+\.)*\w+)(?:\[[^\[\]]+\])*\.?").unwrap();
-        let name = re.captures_iter(line).last()?.get(1)?.as_str();
-        let mut access_iter = name.split(".");
-
-        let base = access_iter.next()?;
-        let mut base_type = ctx.function_ctx(function).get_type_by_name(base)?;
-
-        for prop in access_iter {
-            match &base_type.inner.clone() {
-                naga::TypeInner::Struct { members, .. } => {
-                    for member in members {
-                        if member.name.as_ref().is_some_and(|it| it == prop) {
-                            base_type = ctx.module.types[member.ty].clone();
-                        }
-                    }
-                }
-                _ => break,
-            }
-        }
-
-        Some(base_type)
-    }
 
     fn get_property_access(&self, position: &Position) -> Vec<CompletionItem> {
+        let Some(ctx) = self.module_context() else {
+            return vec![];
+        };
+        
         let Some(function) = self.get_containing_function(position) else {
             return vec![];
         };
-
-        let Some(expr_type) = self.get_proceeding_popery_access(position, function) else {
+    
+        let Some(expr_type) = ctx.get_proceeding_popery_access_type(position, function) else {
             return vec![];
         };
-
-        match expr_type.inner {
+    
+        match expr_type {
             naga::TypeInner::Scalar(_) => {}
             naga::TypeInner::Image { .. } => {}
             naga::TypeInner::Sampler { .. } => {}
@@ -238,7 +207,7 @@ impl TrackedDocument {
                     .collect()
             }
         }
-
+    
         vec![]
     }
 }
