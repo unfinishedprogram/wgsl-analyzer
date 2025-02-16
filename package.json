@@ -60,8 +60,8 @@
     "@types/node": "^20.3.1",
     "@vscode/vsce": "^3.2.2",
     "esbuild": "^0.18.9",
-    "vscode": "^1.1.37",
-    "wasm-pack": "^0.13.1"
+    "@types/vscode": "^1.1.37",
+    "wasm-pack": "^0.0.0"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0",
