@@ -3,8 +3,6 @@ description: Shared Extension Build
 runs:
   using: "composite"
   steps:
-  - uses: actions/checkout@v4
-
   - name: Setup Node.js
     uses: actions/setup-node@v4
 
