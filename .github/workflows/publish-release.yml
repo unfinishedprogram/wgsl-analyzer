@@ -11,4 +11,4 @@ jobs:
     - uses: ./.github/actions/build-extension
 
     - name: VSCE Publish Release
-      run: vsce publish -p ${{ secrets.MARKETPLACE_TOKEN }}
+      run: npx vsce publish -p ${{ secrets.MARKETPLACE_TOKEN }}
