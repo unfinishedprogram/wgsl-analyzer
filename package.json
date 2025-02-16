@@ -13,16 +13,16 @@
   },
   "icon": "icon.png",
   "scripts": {
-    "build-wasm": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --release",
-    "build-client": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --minify --external:vscode",
-    "build-server": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node --minify",
-    "build-wasm-dev": "wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --dev",
-    "build-client-dev": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --external:vscode",
-    "build-server-dev": "esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
+    "build-wasm": "npx wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --release",
+    "build-client": "npx esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --minify --external:vscode",
+    "build-server": "npx esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node --minify",
+    "build-wasm-dev": "npx wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --dev",
+    "build-client-dev": "npx esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --external:vscode",
+    "build-server-dev": "npx esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
     "build-all": "npm run build-wasm; npm run build-server; npm run build-client",
     "build-all-dev": "npm run build-wasm-dev; npm run build-server-dev; npm run build-client-dev",
     "vscode:prepublish": "npm run build-all",
-    "publish": "vsce publish"
+    "publish": "npx vsce publish"
   },
   "main": "./dist/extension.js",
   "categories": [
