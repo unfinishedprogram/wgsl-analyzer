@@ -12,11 +12,11 @@ jobs:
     - name: Install Wasm-Pack
       run: npm install -g wasm-pack
 
+    - name: Install Node Deps
+      run: npm i
+
     - name: Build Extension
       run: npm run build-all
-
-    - name: Publish Extension
-      run: npm run publish-extension
 
     - name: Install VSCE
       run: npm install -g vsce
