@@ -1,9 +1,10 @@
 name: Publish
 on:
   push:
+    tags:
+      - '*'
     branches:
-    - main
-    - preview
+      - main
 
 jobs:
   build:
@@ -40,11 +41,6 @@ jobs:
 
     - name: VSCE Package Release
       run: npm version prerelease npx vsce package
-      if: github.ref == 'refs/heads/main'
-
-    - name: VSCE Package Preview
-      run: npm version prerelease && npx vsce package --pre-release
-      if: github.ref == 'refs/heads/preview'
 
     - name: Push Version Bump
       run: git push
@@ -72,7 +68,3 @@ jobs:
     - name: VSCE Publish Release
       run: npx vsce publish --packagePath *.vsix -p ${{ secrets.MARKETPLACE_TOKEN }}
       if: github.ref == 'refs/heads/main'
-
-    - name: VSCE Publish Preview
-      run: npx vsce publish --packagePath *.vsix --pre-release -p ${{ secrets.MARKETPLACE_TOKEN }}
-      if: github.ref == 'refs/heads/preview'
