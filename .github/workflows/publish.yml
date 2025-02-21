@@ -1,9 +1,10 @@
 name: Publish
 on:
   push:
+    tags:
+      - '*'
     branches:
-    - main
-    - preview
+      - main
 
 jobs:
   build:
@@ -16,19 +17,35 @@ jobs:
       with:
         cache: 'npm'
 
+    - name: Cache Rust
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          wgsl-language-server/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Install Node Deps
       run: npm i
 
     - name: Build
       run: npm run build-all
 
-    - name: VSCE Package Release
-      run: npx vsce package
-      if: github.ref == 'refs/heads/main'
+    - name: Git Config
+      run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-    - name: VSCE Package Preview
-      run: npx vsce package --pre-release
-      if: github.ref != 'refs/heads/main'
+    - name: VSCE Package Release
+      run: npm version prerelease npx vsce package
+
+    - name: Push Version Bump
+      run: git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload Extension Artifact
       uses: actions/upload-artifact@v4
@@ -51,7 +68,3 @@ jobs:
     - name: VSCE Publish Release
       run: npx vsce publish --packagePath *.vsix -p ${{ secrets.MARKETPLACE_TOKEN }}
       if: github.ref == 'refs/heads/main'
-
-    - name: VSCE Publish Preview
-      run: npx vsce publish --packagePath *.vsix --pre-release -p ${{ secrets.MARKETPLACE_TOKEN }}
-      if: github.ref == 'refs/heads/preview'
