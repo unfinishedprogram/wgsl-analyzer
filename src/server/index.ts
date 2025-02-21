@@ -21,6 +21,15 @@ connection.onCompletion((...args) => JSON.parse(wgsl_ls.onCompletion(args[0])));
 
 connection.onDocumentSymbol((arg) => JSON.parse(wgsl_ls.onDocumentSymbol(arg)));
 
+connection.onDocumentFormatting((arg) => {
+  let res = wgsl_ls.onDocumentFormatting(JSON.stringify(arg));
+  if (res == undefined) {
+    return res;
+  } else {
+    return JSON.parse(res);
+  }
+});
+
 connection.onInitialize(() => {
   return {
     capabilities: {
@@ -32,6 +41,7 @@ connection.onInitialize(() => {
       completionProvider: {
         triggerCharacters: ["."],
       },
+      documentFormattingProvider: true,
       documentSymbolProvider: true,
       workspace: {
         workspaceFolders: { supported: true },

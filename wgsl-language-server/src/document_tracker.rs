@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, u32};
 
 use lsp_types::{
-    CompletionItem, DidChangeTextDocumentParams, DocumentSymbol, Position,
-    PublishDiagnosticsParams, TextDocumentItem, Uri,
+    CompletionItem, DidChangeTextDocumentParams, DocumentFormattingParams, DocumentSymbol,
+    Position, PublishDiagnosticsParams, Range, TextDocumentItem, TextEdit, Uri,
 };
 use naga::{
     front::wgsl::ParseError,
@@ -12,6 +12,7 @@ use naga::{
 
 use crate::{
     completions::CompletionProvider,
+    fmt,
     pretty_error::error_context::ModuleContext,
     range_tools::string_range,
     symbol_provider::SymbolProvider,
@@ -148,5 +149,15 @@ impl DocumentTracker {
             .values()
             .flat_map(|doc| doc.get_symbols())
             .collect()
+    }
+
+    pub fn format_document(&self, params: DocumentFormattingParams) -> Option<Vec<TextEdit>> {
+        let document = self.documents.get(&params.text_document.uri)?;
+        let result = fmt::print_ast(&document.content);
+
+        Some(vec![TextEdit::new(
+            Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
+            result,
+        )])
     }
 }

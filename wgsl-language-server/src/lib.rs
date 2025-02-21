@@ -1,6 +1,7 @@
 mod block_ext;
 mod completions;
 mod document_tracker;
+mod fmt;
 mod lexer;
 mod parser;
 mod pretty_error;
@@ -24,8 +25,8 @@ use document_tracker::DocumentTracker;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, TextDocumentIdentifier,
-    TextDocumentPositionParams,
+    DidOpenTextDocumentParams, DocumentFormattingParams, Position, PublishDiagnosticsParams,
+    TextDocumentIdentifier, TextDocumentPositionParams,
 };
 
 use serde_wasm_bindgen::{from_value, to_value};
@@ -72,6 +73,19 @@ impl WGSLLanguageServer {
         log!("Request for document symbol");
         let res = self.documents.get_symbols();
         serde_json::to_string(&res).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = onDocumentFormatting)]
+    pub fn on_document_formatting(&mut self, params_json: String) -> Option<String> {
+        log!("Request for document formatting");
+
+        let Ok(params) = serde_json::from_str::<DocumentFormattingParams>(&params_json) else {
+            log!("Failed to parse params: {}", params_json);
+            return None;
+        };
+
+        let res = self.documents.format_document(params);
+        res.map(|edits| serde_json::to_string(&edits).unwrap())
     }
 
     #[wasm_bindgen(js_name = onNotification)]
