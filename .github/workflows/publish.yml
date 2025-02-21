@@ -34,18 +34,8 @@ jobs:
     - name: Build
       run: npm run build-all
 
-    - name: Git Config
-      run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
     - name: VSCE Package Release
-      run: npm version prerelease npx vsce package
-
-    - name: Push Version Bump
-      run: git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: npx vsce package
 
     - name: Upload Extension Artifact
       uses: actions/upload-artifact@v4
