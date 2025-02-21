@@ -1,12 +1,12 @@
 mod block_ext;
 mod completions;
 mod document_tracker;
+mod lexer;
 mod parser;
 mod pretty_error;
 mod range_tools;
 mod symbol_provider;
 mod wgsl_error;
-
 
 mod macros {
     macro_rules! log {
@@ -36,7 +36,6 @@ extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
     fn console_log(s: &str);
 }
-
 
 #[wasm_bindgen]
 pub struct WGSLLanguageServer {
@@ -111,7 +110,11 @@ impl WGSLLanguageServer {
         for params in diagnostics {
             let params = &to_value(&params).unwrap();
             if let Err(e) = self.send_diagnostics_callback.call1(this, params) {
-                log!("send_diagnostics params:\n\t{:?}\n\tJS error: {:?}", params, e);
+                log!(
+                    "send_diagnostics params:\n\t{:?}\n\tJS error: {:?}",
+                    params,
+                    e
+                );
             }
         }
     }
