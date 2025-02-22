@@ -102,3 +102,11 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Changed
 
 - Improved robustness and automation of releases
+
+
+## [0.6.1]
+
+### Added
+
+- Code formatting for WGSL source files
+  - Formatting style is inspired by rustfmt
