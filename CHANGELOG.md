@@ -94,3 +94,11 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 - Updated Naga version to 24
 - Adjustments to diagnostic messages
 - Autocompletion is now more context aware
+
+
+
+## [0.5.1]
+
+### Changed
+
+- Improved robustness and automation of releases
