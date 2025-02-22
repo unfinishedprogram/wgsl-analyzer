@@ -1,12 +1,13 @@
 # WGSL-Analyzer
 
-> A VSCode extension providing validation and syntax highlighting of WGSL (Web GPU Shading Language) files
+> A VSCode extension providing validation syntax highlighting and formatting of WGSL (Web GPU Shading Language) files
 
 *If you encounter any issues, please report them on [github](https://github.com/unfinishedprogram/wgsl-analyzer/issues)*
 
 ## Features
 
 - ✅ **Syntax highlighting of WGSL files**
+- ✅ **Code formatting**
 - ✅ **Syntax validation**
 - ✅ **Correctness validation**
 - ✅ **Document outline**
@@ -26,7 +27,7 @@
 
 ## About
 
-This extension is written in rust and uses Naga compiled to wasm to generate diagnostics. 
+This extension is written in rust and uses Naga compiled to wasm to generate diagnostics.
 This means that the extension should work on any platform, and does not require any external binaries.
 
 ## Developing

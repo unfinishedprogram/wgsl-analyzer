@@ -1,12 +1,13 @@
 mod block_ext;
 mod completions;
 mod document_tracker;
+mod fmt;
+mod lexer;
 mod parser;
 mod pretty_error;
 mod range_tools;
 mod symbol_provider;
 mod wgsl_error;
-
 
 mod macros {
     macro_rules! log {
@@ -24,8 +25,8 @@ use document_tracker::DocumentTracker;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, Position, PublishDiagnosticsParams, TextDocumentIdentifier,
-    TextDocumentPositionParams,
+    DidOpenTextDocumentParams, DocumentFormattingParams, Position, PublishDiagnosticsParams,
+    TextDocumentIdentifier, TextDocumentPositionParams,
 };
 
 use serde_wasm_bindgen::{from_value, to_value};
@@ -36,7 +37,6 @@ extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
     fn console_log(s: &str);
 }
-
 
 #[wasm_bindgen]
 pub struct WGSLLanguageServer {
@@ -75,6 +75,19 @@ impl WGSLLanguageServer {
         serde_json::to_string(&res).unwrap()
     }
 
+    #[wasm_bindgen(js_name = onDocumentFormatting)]
+    pub fn on_document_formatting(&mut self, params_json: String) -> Option<String> {
+        log!("Request for document formatting");
+
+        let Ok(params) = serde_json::from_str::<DocumentFormattingParams>(&params_json) else {
+            log!("Failed to parse params: {}", params_json);
+            return None;
+        };
+
+        let edits = self.documents.format_document(params)?;
+        serde_json::to_string(&edits).ok()
+    }
+
     #[wasm_bindgen(js_name = onNotification)]
     pub fn on_notification(&mut self, method: &str, params: JsValue) {
         match method {
@@ -111,7 +124,11 @@ impl WGSLLanguageServer {
         for params in diagnostics {
             let params = &to_value(&params).unwrap();
             if let Err(e) = self.send_diagnostics_callback.call1(this, params) {
-                log!("send_diagnostics params:\n\t{:?}\n\tJS error: {:?}", params, e);
+                log!(
+                    "send_diagnostics params:\n\t{:?}\n\tJS error: {:?}",
+                    params,
+                    e
+                );
             }
         }
     }

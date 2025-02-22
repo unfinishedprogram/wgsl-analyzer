@@ -11,6 +11,7 @@ codespan-reporting = "0.11.1"
 console_error_panic_hook = "0.1.6"
 either = "1.13.0"
 js-sys = "0.3.53"
+logos = "0.15.0"
 lsp-types = "0.97.0"
 naga = { version = "24.0.0", features = ["wgsl-in"] }
 regex = "1.9.3"
