@@ -84,8 +84,8 @@ impl WGSLLanguageServer {
             return None;
         };
 
-        let res = self.documents.format_document(params);
-        res.map(|edits| serde_json::to_string(&edits).unwrap())
+        let edits = self.documents.format_document(params)?;
+        serde_json::to_string(&edits).ok()
     }
 
     #[wasm_bindgen(js_name = onNotification)]

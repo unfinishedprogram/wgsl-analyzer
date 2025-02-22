@@ -1,4 +1,4 @@
-use std::{collections::HashMap, u32};
+use std::collections::HashMap;
 
 use lsp_types::{
     CompletionItem, DidChangeTextDocumentParams, DocumentFormattingParams, DocumentSymbol,
@@ -153,7 +153,7 @@ impl DocumentTracker {
 
     pub fn format_document(&self, params: DocumentFormattingParams) -> Option<Vec<TextEdit>> {
         let document = self.documents.get(&params.text_document.uri)?;
-        let result = fmt::print_ast(&document.content);
+        let result = fmt::pretty_print_ast(&document.content, &params.options)?;
 
         Some(vec![TextEdit::new(
             Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),

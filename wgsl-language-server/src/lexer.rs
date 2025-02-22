@@ -1,9 +1,40 @@
+use std::ops::Range;
+
 use comment::lex_multiline_comment;
 use logos::Logos;
 mod comment;
 mod keyword;
+mod template_disambiguation;
 mod test;
 use keyword::{parse_ident, IdentError, Keyword};
+use template_disambiguation::insert_template_tokens;
+
+use crate::log;
+
+// TODO: Cleanup error filtering
+pub fn lex(src: &str) -> Option<Vec<(Token<'_>, Range<usize>)>> {
+    let tokens = Token::lexer(src).spanned().collect::<Vec<_>>();
+
+    if tokens.iter().any(|it| it.0.is_err()) {
+        let span = tokens.iter().find(|it| it.0.is_err()).unwrap().1.clone();
+
+        log!(
+            "Failed to lex source code: {:?} \n {:?}",
+            tokens.iter().find(|it| it.0.is_err()),
+            &src[span]
+        );
+        return None;
+    };
+
+    let mut tokens = tokens
+        .iter()
+        .map(|(tok, span)| (tok.clone().unwrap(), span.clone()))
+        .collect::<Vec<_>>();
+
+    insert_template_tokens(src, &mut tokens);
+
+    Some(tokens)
+}
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum LexError {
@@ -127,4 +158,7 @@ pub enum Token<'src> {
     #[regex(r"/\*", lex_multiline_comment)]
     #[regex(r"\/\/.*\n")]
     Trivia(&'src str),
+
+    TemplateArgsStart,
+    TemplateArgsEnd,
 }
