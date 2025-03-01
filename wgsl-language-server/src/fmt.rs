@@ -59,6 +59,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             (T::Syntax("["), _) => D::None,
             (_, T::Syntax("]")) => D::None,
 
+            (T::Ident(_), T::Syntax("[")) => D::None,
             (T::Syntax("{"), T::Syntax("}")) => D::Space,
 
             (_, T::Syntax("}")) => {
@@ -83,12 +84,16 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                     D::Newline
                 }
             }
+
+            // Unary Operators
+            (T::Syntax("!" | "~"), _) => D::None,
+
             (T::Syntax("@"), _) => D::None,
             (_, T::Syntax(";")) => D::None,
             (_, T::Syntax(",")) => D::None,
-            (T::Ident(_), T::Syntax("++")) => D::None,
+            (T::Ident(_) | T::Syntax("]"), T::Syntax("++" | "--")) => D::None,
             (T::Ident(_), T::Syntax(":")) => D::None,
-            (T::Ident(_), T::Syntax("(")) => D::None,
+            (T::Ident(_) | T::TemplateArgsEnd, T::Syntax("(")) => D::None,
             (T::Trivia(_), _) => D::Newline,
             (
                 T::Keyword(_)
