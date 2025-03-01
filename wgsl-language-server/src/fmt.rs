@@ -36,6 +36,14 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
         use Delimiter as D;
         use Token as T;
 
+        if matches!(token, T::Syntax("(")) {
+            ctx.paren_start();
+        }
+
+        if matches!(token, T::Syntax(")")) {
+            ctx.paren_end();
+        }
+
         let delimiter = match (token, next_token) {
             // Skip the delimiter for property access
             (_, T::Syntax(".")) | (T::Syntax("."), _) => D::None,
@@ -58,8 +66,13 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 ctx.indent();
                 D::Newline
             }
-            (T::Syntax(";"), _) => D::Newline,
-
+            (T::Syntax(";"), _) => {
+                if ctx.inside_parenthesis() {
+                    D::Space
+                } else {
+                    D::Newline
+                }
+            }
             (T::Syntax("}"), _) => {
                 if ctx.indent_level == 0 {
                     D::DoubleNewline
@@ -126,6 +139,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
 struct ASTContext {
     indent_level: usize,
     indent_str: String,
+    parenthesis_level: usize,
 }
 
 impl ASTContext {
@@ -138,6 +152,7 @@ impl ASTContext {
         Self {
             indent_level: 0,
             indent_str,
+            parenthesis_level: 0,
         }
     }
 
@@ -151,5 +166,17 @@ impl ASTContext {
 
     fn indentation(&self) -> String {
         self.indent_str.repeat(self.indent_level)
+    }
+
+    fn paren_start(&mut self) {
+        self.parenthesis_level += 1;
+    }
+
+    fn paren_end(&mut self) {
+        self.parenthesis_level = self.parenthesis_level.saturating_sub(1);
+    }
+
+    fn inside_parenthesis(&self) -> bool {
+        self.parenthesis_level > 0
     }
 }
