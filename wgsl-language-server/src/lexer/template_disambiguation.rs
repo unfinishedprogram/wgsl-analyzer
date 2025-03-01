@@ -1,12 +1,12 @@
-use std::ops::Range;
+use std::{collections::HashSet, ops::Range};
 
 use super::Token;
 
 pub fn insert_template_tokens(source: &str, tokens: &mut Vec<(Token, Range<usize>)>) {
     let templates = find_templates(source);
 
-    let is_start = |pos| templates.iter().any(|(start, _)| *start == pos);
-    let is_end = |pos| templates.iter().any(|(_, end)| *end == pos);
+    let starts: HashSet<usize> = templates.iter().map(|(start, _)| *start).collect();
+    let ends: HashSet<usize> = templates.iter().map(|(_, end)| *end).collect();
 
     let mut res_tokens: Vec<(Token, Range<usize>)> = vec![];
 
@@ -23,8 +23,8 @@ pub fn insert_template_tokens(source: &str, tokens: &mut Vec<(Token, Range<usize
             let (left_span, right_span) = (left..(left + 1), (right..(right + 1)));
 
             match (
-                is_end(left) || is_start(left),
-                is_end(right) || is_start(right),
+                ends.contains(&left) || starts.contains(&left),
+                ends.contains(&right) || starts.contains(&right),
             ) {
                 (true, true) => {
                     res_tokens.push((ident.clone(), left_span));
@@ -43,10 +43,10 @@ pub fn insert_template_tokens(source: &str, tokens: &mut Vec<(Token, Range<usize
                 }
                 _ => {}
             }
-        } else if is_start(span.start) {
+        } else if starts.contains(&span.start) {
             res_tokens.push((Token::TemplateArgsStart, span.clone()));
             continue;
-        } else if is_end(span.start) {
+        } else if ends.contains(&span.start) {
             res_tokens.push((Token::TemplateArgsEnd, span.clone()));
             continue;
         }
