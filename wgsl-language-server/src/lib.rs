@@ -36,6 +36,9 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
     fn console_log(s: &str);
+
+    #[wasm_bindgen(js_namespace = performance, js_name = now)]
+    fn performance_now() -> usize;
 }
 
 #[wasm_bindgen]
