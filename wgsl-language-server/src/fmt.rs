@@ -2,14 +2,6 @@ use lsp_types::FormattingOptions;
 
 use crate::lexer::{Token, lex};
 
-pub fn indent_string(options: &FormattingOptions) -> String {
-    if options.insert_spaces {
-        " ".repeat(options.tab_size as usize)
-    } else {
-        "\t".to_string()
-    }
-}
-
 pub enum Delimiter {
     DoubleNewline,
     Newline,
@@ -19,10 +11,9 @@ pub enum Delimiter {
 
 pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<String> {
     let tokens = lex(code)?;
+    let mut ctx = ASTContext::new(options);
 
     let mut formatted = String::new();
-    let mut indent_level: usize = 0;
-    let indent_str = indent_string(options);
 
     for window in tokens.windows(2) {
         let (token, span) = &window[0];
@@ -58,20 +49,20 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             (_, T::Syntax(")")) => D::None,
 
             (T::Syntax(";"), T::Syntax("}")) => {
-                indent_level = indent_level.saturating_sub(1);
+                ctx.indent_level = ctx.indent_level.saturating_sub(1);
                 D::Newline
             }
             (T::Syntax(";"), _) => D::Newline,
             (T::Syntax("{"), _) => {
-                indent_level += 1;
+                ctx.indent();
                 D::Newline
             }
             (_, T::Syntax("}")) => {
-                indent_level = indent_level.saturating_sub(1);
+                ctx.dedent();
                 D::Newline
             }
             (T::Syntax("}"), _) => {
-                if indent_level == 0 {
+                if ctx.indent_level == 0 {
                     D::DoubleNewline
                 } else {
                     D::Newline
@@ -103,7 +94,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 if has_explicit_newline {
                     formatted.push('\n');
                 }
-                formatted.push_str(&indent_str.repeat(indent_level));
+                formatted.push_str(&ctx.indentation());
             }
             D::DoubleNewline => formatted.push_str("\n\n"),
             D::Space => formatted.push(' '),
@@ -131,4 +122,35 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
     }
 
     Some(formatted)
+}
+
+struct ASTContext {
+    indent_level: usize,
+    indent_str: String,
+}
+
+impl ASTContext {
+    fn new(options: &FormattingOptions) -> Self {
+        let indent_str = if options.insert_spaces {
+            " ".repeat(options.tab_size as usize)
+        } else {
+            "\t".to_string()
+        };
+        Self {
+            indent_level: 0,
+            indent_str,
+        }
+    }
+
+    fn indent(&mut self) {
+        self.indent_level += 1;
+    }
+
+    fn dedent(&mut self) {
+        self.indent_level = self.indent_level.saturating_sub(1);
+    }
+
+    fn indentation(&self) -> String {
+        self.indent_str.repeat(self.indent_level)
+    }
 }
