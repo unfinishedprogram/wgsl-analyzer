@@ -25,7 +25,9 @@
   },
   "main": "./dist/extension.js",
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters",
+    "Formatters"
   ],
   "keywords": [
     "wgsl",
