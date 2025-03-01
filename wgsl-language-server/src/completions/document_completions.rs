@@ -2,16 +2,16 @@ use lsp_types::{CompletionItem, CompletionItemKind, Position};
 use naga::{Function, Span};
 
 use super::{
-    completion_provider::{detailed_completion_item, new_completion_item},
     CompletionProvider,
+    completion_provider::{detailed_completion_item, new_completion_item},
 };
 
 use crate::{
     completions::swizzle::SWIZZLES,
     document_tracker::TrackedDocument,
     parser::matching_bracket_index,
-    pretty_error::error_context::{type_print::TypePrintable, ModuleContext},
-    range_tools::{source_location_to_range, span_to_lsp_range, string_offset, RangeTools},
+    pretty_error::error_context::{ModuleContext, type_print::TypePrintable},
+    range_tools::{RangeTools, source_location_to_range, span_to_lsp_range, string_offset},
 };
 
 impl TrackedDocument {
@@ -203,7 +203,7 @@ impl TrackedDocument {
                     .iter()
                     .flat_map(|member| member.name.clone())
                     .map(|name| new_completion_item(name, CompletionItemKind::FIELD))
-                    .collect()
+                    .collect();
             }
         }
 

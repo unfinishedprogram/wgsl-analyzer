@@ -7,12 +7,12 @@ use crate::block_ext::BlockExt;
 use as_type::AsType;
 use codespan_reporting::diagnostic::Diagnostic;
 use naga::{
-    valid::{CallError, ExpressionError, FunctionError, ValidationError},
     Expression, Function, Handle, Module, Statement, WithSpan,
+    valid::{CallError, ExpressionError, FunctionError, ValidationError},
 };
 use type_print::TypePrintable;
 
-use super::label_tools::{label_primary, label_secondary, LabelAppend};
+use super::label_tools::{LabelAppend, label_primary, label_secondary};
 
 pub struct ModuleContext<'a> {
     pub module: &'a Module,

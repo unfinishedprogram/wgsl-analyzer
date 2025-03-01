@@ -1,6 +1,6 @@
 use lsp_types::FormattingOptions;
 
-use crate::lexer::{lex, Token};
+use crate::lexer::{Token, lex};
 
 pub fn indent_string(options: &FormattingOptions) -> String {
     if options.insert_spaces {
