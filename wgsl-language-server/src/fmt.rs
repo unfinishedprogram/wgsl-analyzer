@@ -48,8 +48,8 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             (T::Syntax("("), _) => D::None,
             (_, T::Syntax(")")) => D::None,
 
-            (T::Syntax(";"), T::Syntax("}")) => {
-                ctx.indent_level = ctx.indent_level.saturating_sub(1);
+            (_, T::Syntax("}")) => {
+                ctx.dedent();
                 D::Newline
             }
             (T::Syntax(";"), _) => D::Newline,
@@ -57,10 +57,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 ctx.indent();
                 D::Newline
             }
-            (_, T::Syntax("}")) => {
-                ctx.dedent();
-                D::Newline
-            }
+
             (T::Syntax("}"), _) => {
                 if ctx.indent_level == 0 {
                     D::DoubleNewline
