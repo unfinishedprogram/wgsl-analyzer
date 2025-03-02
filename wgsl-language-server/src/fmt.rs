@@ -65,7 +65,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 D::Newline
             }
             (T::Syntax(";"), _) => {
-                if ctx.inside_parenthesis() {
+                if ctx.paren_level > 0 {
                     D::Space
                 } else {
                     D::Newline
@@ -230,9 +230,5 @@ impl ASTContext<'_> {
 
     fn indentation(&self) -> String {
         self.indent_str.repeat(self.indent_level)
-    }
-
-    fn inside_parenthesis(&self) -> bool {
-        self.paren_level > 0
     }
 }
