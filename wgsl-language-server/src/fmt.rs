@@ -36,13 +36,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
         use Delimiter as D;
         use Token as T;
 
-        if matches!(token, T::Syntax("(")) {
-            ctx.paren_start();
-        }
-
-        if matches!(token, T::Syntax(")")) {
-            ctx.paren_end();
-        }
+        ctx.handle_brackets((token, next_token));
 
         let delimiter = match (token, next_token) {
             // Skip the delimiter for property access
@@ -90,6 +84,19 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
 
             // Ptr operations
             (T::Syntax("*" | "&"), _) if matches!(ctx.prev_token, T::Syntax("=" | "(")) => D::None,
+
+            // Newlines for struct declaration properties
+            (T::Syntax(","), _) => {
+                if ctx.brace_level == 1
+                    && ctx.template_level == 0
+                    && ctx.paren_level == 0
+                    && ctx.bracket_level == 0
+                {
+                    D::Newline
+                } else {
+                    D::Space
+                }
+            }
 
             (T::Syntax("@"), _) => D::None,
             (_, T::Syntax(";")) => D::None,
@@ -153,7 +160,10 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
 struct ASTContext<'a> {
     indent_level: usize,
     indent_str: String,
-    parenthesis_level: usize,
+    paren_level: usize,
+    bracket_level: usize,
+    brace_level: usize,
+    template_level: usize,
     // Used for differentiating between binary and unary operators
     prev_token: &'a Token<'a>,
 }
@@ -168,8 +178,45 @@ impl ASTContext<'_> {
         Self {
             indent_level: 0,
             indent_str,
-            parenthesis_level: 0,
+            paren_level: 0,
+            bracket_level: 0,
+            brace_level: 0,
+            template_level: 0,
             prev_token: &Token::Syntax(""),
+        }
+    }
+
+    fn handle_brackets(&mut self, tokens: (&Token<'_>, &Token<'_>)) {
+        match tokens {
+            (Token::Syntax("{"), _) => {
+                self.brace_level = self.brace_level.saturating_add(1);
+            }
+            (Token::Syntax("}"), _) => {
+                self.brace_level = self.brace_level.saturating_sub(1);
+            }
+
+            (Token::Syntax("("), _) => {
+                self.paren_level = self.paren_level.saturating_add(1);
+            }
+            (Token::Syntax(")"), _) => {
+                self.paren_level = self.paren_level.saturating_sub(1);
+            }
+
+            (Token::Syntax("["), _) => {
+                self.bracket_level = self.bracket_level.saturating_add(1);
+            }
+            (Token::Syntax("]"), _) => {
+                self.bracket_level = self.bracket_level.saturating_sub(1);
+            }
+
+            (Token::TemplateArgsStart, _) => {
+                self.template_level = self.template_level.saturating_add(1);
+            }
+            (Token::TemplateArgsEnd, _) => {
+                self.template_level = self.template_level.saturating_sub(1);
+            }
+
+            _ => {}
         }
     }
 
@@ -185,15 +232,7 @@ impl ASTContext<'_> {
         self.indent_str.repeat(self.indent_level)
     }
 
-    fn paren_start(&mut self) {
-        self.parenthesis_level += 1;
-    }
-
-    fn paren_end(&mut self) {
-        self.parenthesis_level = self.parenthesis_level.saturating_sub(1);
-    }
-
     fn inside_parenthesis(&self) -> bool {
-        self.parenthesis_level > 0
+        self.paren_level > 0
     }
 }
