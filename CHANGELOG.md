@@ -24,7 +24,7 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - Incorrect usage of source field in LSP diagnostic
 
-## [0.3.0] 
+## [0.3.0]
 
 ### Added
 
@@ -44,7 +44,7 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - [Incorrect diagnostic due to detection of entry-point outputs](https://github.com/unfinishedprogram/wgsl-analyzer/issues/1)
 
-## [0.4.0] 
+## [0.4.0]
 
 ### Changed
 
@@ -55,7 +55,7 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - [#3](https://github.com/unfinishedprogram/wgsl-analyzer/issues/3) Is now fixed, since it was caused by a bug in a previous version of Naga
 
-## [0.4.1] 
+## [0.4.1]
 
 ### Changed
 
@@ -63,18 +63,18 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 - Refactor of autocompletion system
 
 
-## [0.4.2] 
+## [0.4.2]
 
 ### Fixed
 
 - Fixed incorrect error reporting locations on windows due to incorrect handling of CRLF line terminators see [issue #6](https://github.com/unfinishedprogram/wgsl-analyzer/issues/6)
 
 
-## [0.4.3] 
+## [0.4.3]
 
 ### Fixed
 
-- Fixed panic when handling auto-completion after deleting lines 
+- Fixed panic when handling auto-completion after deleting lines
 
 ### Changed
 
@@ -114,3 +114,24 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Changed
 
 - Removed non-existent literals from language-configuration
+
+
+## [0.6.1]
+
+### Changed
+
+- Updated rust edition to 2024
+- Added package categories for new formatting feature
+
+### Fixed
+
+- Many formatting adjustments
+  - A newline is added before attributes
+  - Properties are separated with a newline for struct declarations
+  - Whitespace between nested index accesses are removed
+  - Whitespace surrounding index accesses are removed
+  - Space between unary operations and targets has been removed
+  - Fixed unwanted newlines in for loops
+  - Removed newline within body of empty blocks
+- Fixed potential panic when parsing nested block comments
+- Massively improved formatting performance
