@@ -59,7 +59,7 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             (T::Syntax("["), _) => D::None,
             (_, T::Syntax("]")) => D::None,
 
-            (T::Ident(_), T::Syntax("[")) => D::None,
+            (T::Ident(_) | T::Syntax("]"), T::Syntax("[")) => D::None,
             (T::Syntax("{"), T::Syntax("}")) => D::Space,
 
             (_, T::Syntax("}")) => {
