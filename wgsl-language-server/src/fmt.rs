@@ -88,6 +88,9 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             // Unary Operators
             (T::Syntax("!" | "~"), _) => D::None,
 
+            // Ptr operations
+            (T::Syntax("*" | "&"), _) if matches!(ctx.prev_token, T::Syntax("=" | "(")) => D::None,
+
             (T::Syntax("@"), _) => D::None,
             (_, T::Syntax(";")) => D::None,
             (_, T::Syntax(",")) => D::None,
@@ -121,6 +124,8 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             D::Space => formatted.push(' '),
             D::None => {}
         }
+
+        ctx.prev_token = token;
     }
 
     let last_token = tokens.last()?;
@@ -145,13 +150,15 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
     Some(formatted)
 }
 
-struct ASTContext {
+struct ASTContext<'a> {
     indent_level: usize,
     indent_str: String,
     parenthesis_level: usize,
+    // Used for differentiating between binary and unary operators
+    prev_token: &'a Token<'a>,
 }
 
-impl ASTContext {
+impl ASTContext<'_> {
     fn new(options: &FormattingOptions) -> Self {
         let indent_str = if options.insert_spaces {
             " ".repeat(options.tab_size as usize)
@@ -162,6 +169,7 @@ impl ASTContext {
             indent_level: 0,
             indent_str,
             parenthesis_level: 0,
+            prev_token: &Token::Syntax(""),
         }
     }
 
