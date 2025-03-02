@@ -1,6 +1,6 @@
 use lsp_types::FormattingOptions;
 
-use crate::lexer::{Token, lex};
+use crate::lexer::{Keyword, Token, lex};
 
 pub enum Delimiter {
     DoubleNewline,
@@ -96,6 +96,12 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 } else {
                     D::Space
                 }
+            }
+
+            (_, T::Keyword(Keyword::Fn | Keyword::Var | Keyword::Const))
+                if (ctx.template_level == 0 && ctx.paren_level == 0 && ctx.bracket_level == 0) =>
+            {
+                D::Newline
             }
 
             (T::Syntax("@"), _) => D::None,
