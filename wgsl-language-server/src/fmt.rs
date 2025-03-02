@@ -1,14 +1,6 @@
 use lsp_types::FormattingOptions;
 
-use crate::lexer::{lex, Token};
-
-pub fn indent_string(options: &FormattingOptions) -> String {
-    if options.insert_spaces {
-        " ".repeat(options.tab_size as usize)
-    } else {
-        "\t".to_string()
-    }
-}
+use crate::lexer::{Keyword, Token, lex};
 
 pub enum Delimiter {
     DoubleNewline,
@@ -19,10 +11,9 @@ pub enum Delimiter {
 
 pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<String> {
     let tokens = lex(code)?;
+    let mut ctx = ASTContext::new(options);
 
     let mut formatted = String::new();
-    let mut indent_level: usize = 0;
-    let indent_str = indent_string(options);
 
     for window in tokens.windows(2) {
         let (token, span) = &window[0];
@@ -45,6 +36,8 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
         use Delimiter as D;
         use Token as T;
 
+        ctx.handle_brackets((token, next_token));
+
         let delimiter = match (token, next_token) {
             // Skip the delimiter for property access
             (_, T::Syntax(".")) | (T::Syntax("."), _) => D::None,
@@ -57,31 +50,66 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
             (T::Syntax("("), _) => D::None,
             (_, T::Syntax(")")) => D::None,
 
-            (T::Syntax(";"), T::Syntax("}")) => {
-                indent_level = indent_level.saturating_sub(1);
-                D::Newline
-            }
-            (T::Syntax(";"), _) => D::Newline,
-            (T::Syntax("{"), _) => {
-                indent_level += 1;
-                D::Newline
-            }
+            (T::Syntax("["), _) => D::None,
+            (_, T::Syntax("]")) => D::None,
+
+            (T::Ident(_) | T::Syntax("]"), T::Syntax("[")) => D::None,
+            (T::Syntax("{"), T::Syntax("}")) => D::Space,
+
             (_, T::Syntax("}")) => {
-                indent_level = indent_level.saturating_sub(1);
+                ctx.dedent();
                 D::Newline
+            }
+            (T::Syntax("{"), _) => {
+                ctx.indent();
+                D::Newline
+            }
+            (T::Syntax(";"), _) => {
+                if ctx.paren_level > 0 {
+                    D::Space
+                } else {
+                    D::Newline
+                }
             }
             (T::Syntax("}"), _) => {
-                if indent_level == 0 {
+                if ctx.indent_level == 0 {
                     D::DoubleNewline
                 } else {
                     D::Newline
                 }
             }
+
+            // Unary Operators
+            (T::Syntax("!" | "~"), _) => D::None,
+
+            // Ptr operations
+            (T::Syntax("*" | "&"), _) if matches!(ctx.prev_token, T::Syntax("=" | "(")) => D::None,
+
+            // Newlines for struct declaration properties
+            (T::Syntax(","), _) => {
+                if ctx.brace_level == 1
+                    && ctx.template_level == 0
+                    && ctx.paren_level == 0
+                    && ctx.bracket_level == 0
+                {
+                    D::Newline
+                } else {
+                    D::Space
+                }
+            }
+
+            (_, T::Keyword(Keyword::Fn | Keyword::Var | Keyword::Const))
+                if (ctx.template_level == 0 && ctx.paren_level == 0 && ctx.bracket_level == 0) =>
+            {
+                D::Newline
+            }
+
             (T::Syntax("@"), _) => D::None,
             (_, T::Syntax(";")) => D::None,
             (_, T::Syntax(",")) => D::None,
+            (T::Ident(_) | T::Syntax("]"), T::Syntax("++" | "--")) => D::None,
             (T::Ident(_), T::Syntax(":")) => D::None,
-            (T::Ident(_), T::Syntax("(")) => D::None,
+            (T::Ident(_) | T::TemplateArgsEnd, T::Syntax("(")) => D::None,
             (T::Trivia(_), _) => D::Newline,
             (
                 T::Keyword(_)
@@ -103,12 +131,14 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
                 if has_explicit_newline {
                     formatted.push('\n');
                 }
-                formatted.push_str(&indent_str.repeat(indent_level));
+                formatted.push_str(&ctx.indentation());
             }
             D::DoubleNewline => formatted.push_str("\n\n"),
             D::Space => formatted.push(' '),
             D::None => {}
         }
+
+        ctx.prev_token = token;
     }
 
     let last_token = tokens.last()?;
@@ -131,4 +161,80 @@ pub fn pretty_print_ast(code: &str, options: &FormattingOptions) -> Option<Strin
     }
 
     Some(formatted)
+}
+
+struct ASTContext<'a> {
+    indent_level: usize,
+    indent_str: String,
+    paren_level: usize,
+    bracket_level: usize,
+    brace_level: usize,
+    template_level: usize,
+    // Used for differentiating between binary and unary operators
+    prev_token: &'a Token<'a>,
+}
+
+impl ASTContext<'_> {
+    fn new(options: &FormattingOptions) -> Self {
+        let indent_str = if options.insert_spaces {
+            " ".repeat(options.tab_size as usize)
+        } else {
+            "\t".to_string()
+        };
+        Self {
+            indent_level: 0,
+            indent_str,
+            paren_level: 0,
+            bracket_level: 0,
+            brace_level: 0,
+            template_level: 0,
+            prev_token: &Token::Syntax(""),
+        }
+    }
+
+    fn handle_brackets(&mut self, tokens: (&Token<'_>, &Token<'_>)) {
+        match tokens {
+            (Token::Syntax("{"), _) => {
+                self.brace_level = self.brace_level.saturating_add(1);
+            }
+            (Token::Syntax("}"), _) => {
+                self.brace_level = self.brace_level.saturating_sub(1);
+            }
+
+            (Token::Syntax("("), _) => {
+                self.paren_level = self.paren_level.saturating_add(1);
+            }
+            (Token::Syntax(")"), _) => {
+                self.paren_level = self.paren_level.saturating_sub(1);
+            }
+
+            (Token::Syntax("["), _) => {
+                self.bracket_level = self.bracket_level.saturating_add(1);
+            }
+            (Token::Syntax("]"), _) => {
+                self.bracket_level = self.bracket_level.saturating_sub(1);
+            }
+
+            (Token::TemplateArgsStart, _) => {
+                self.template_level = self.template_level.saturating_add(1);
+            }
+            (Token::TemplateArgsEnd, _) => {
+                self.template_level = self.template_level.saturating_sub(1);
+            }
+
+            _ => {}
+        }
+    }
+
+    fn indent(&mut self) {
+        self.indent_level += 1;
+    }
+
+    fn dedent(&mut self) {
+        self.indent_level = self.indent_level.saturating_sub(1);
+    }
+
+    fn indentation(&self) -> String {
+        self.indent_str.repeat(self.indent_level)
+    }
 }

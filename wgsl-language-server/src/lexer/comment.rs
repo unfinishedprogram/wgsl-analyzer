@@ -26,15 +26,16 @@ pub fn lex_multiline_comment<'a>(lex: &mut Lexer<'a, Token<'a>>) -> Result<&'a s
             (None, Some(end)) => {
                 comment_depth -= 1;
                 pos += end + 2;
-                if comment_depth == 0 {
-                    lex.bump(pos);
-                    return Ok(lex.slice());
-                }
             }
             (None, None) => {
                 lex.bump(remainder_slice.len());
                 return Err(LexError::UnterminatedComment);
             }
+        }
+
+        if comment_depth == 0 {
+            lex.bump(pos);
+            return Ok(lex.slice());
         }
     }
 }

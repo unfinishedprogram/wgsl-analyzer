@@ -1,6 +1,6 @@
 use naga::{Constant, Expression, GlobalVariable, Handle, LocalVariable, Type};
 
-use super::{as_type::AsType, FunctionContext, ModuleContext};
+use super::{FunctionContext, ModuleContext, as_type::AsType};
 
 pub enum GlobalIdentQueryResult {
     GlobalVariable(Handle<GlobalVariable>),

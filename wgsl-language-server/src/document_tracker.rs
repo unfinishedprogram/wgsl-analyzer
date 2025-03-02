@@ -5,9 +5,9 @@ use lsp_types::{
     Position, PublishDiagnosticsParams, Range, TextDocumentItem, TextEdit, Uri,
 };
 use naga::{
+    Module,
     front::wgsl::ParseError,
     valid::{Capabilities, ModuleInfo, ValidationError, ValidationFlags, Validator},
-    Module,
 };
 
 use crate::{

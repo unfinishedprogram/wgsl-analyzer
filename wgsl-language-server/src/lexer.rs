@@ -6,7 +6,8 @@ mod comment;
 mod keyword;
 mod template_disambiguation;
 mod test;
-use keyword::{parse_ident, IdentError, Keyword};
+pub use keyword::Keyword;
+use keyword::{IdentError, parse_ident};
 use template_disambiguation::insert_template_tokens;
 
 use crate::log;

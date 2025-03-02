@@ -1,6 +1,6 @@
 use lsp_types::CompletionItemKind;
 
-use super::{completion_provider::new_completion_item, CompletionProvider};
+use super::{CompletionProvider, completion_provider::new_completion_item};
 
 pub struct KeywordCompletions;
 

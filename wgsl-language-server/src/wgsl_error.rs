@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Diagnostic, LabelStyle};
 use lsp_types::{DiagnosticRelatedInformation, Uri};
-use naga::{front::wgsl::ParseError, SourceLocation};
+use naga::{SourceLocation, front::wgsl::ParseError};
 
 use crate::{
     pretty_error::error_context::ModuleContext,
