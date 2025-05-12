@@ -135,9 +135,3 @@ All notable changes to the "WGSL Language Server" extension will be documented i
   - Removed newline within body of empty blocks
 - Fixed potential panic when parsing nested block comments
 - Massively improved formatting performance
-
-## [0.7.0]
-
-### Changed
-
-- Now compatible with VS-Code for web!

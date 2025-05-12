@@ -1,15 +1,17 @@
 import {
   ExtensionContext,
   RelativePattern,
-  Uri,
   WorkspaceFolder,
   WorkspaceFoldersChangeEvent,
+  languages,
   workspace,
 } from "vscode";
+import { join } from "path";
 import {
   LanguageClient,
   LanguageClientOptions,
-} from "vscode-languageclient/browser";
+  TransportKind,
+} from "vscode-languageclient/node";
 
 const extensionName = "wgsl-analyzer";
 
@@ -17,8 +19,6 @@ const clients: Map<string, LanguageClient> = new Map();
 
 export async function activate(context: ExtensionContext) {
   console.info("Starting WGSL Language Support...");
-
-  context.asAbsolutePath("dist/server.js");
 
   const folders = workspace.workspaceFolders || [];
   for (const folder of folders) await startClient(folder, context);
@@ -30,16 +30,7 @@ export async function deactivate(): Promise<void> {
 }
 
 async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
-  const server = Uri.joinPath(context.extensionUri, "dist/server.js");
-  const worker = new Worker(server.toString(true));
-
-  worker.postMessage({
-    type: "webpack_public_path",
-    extension_uri: context.extensionUri.toString(),
-  });
-
-  worker.postMessage({ type: "start" });
-
+  const server = context.asAbsolutePath(join("dist", "server.js"));
   console.error("Starting client");
   console.error("Server Module URI", server);
 
@@ -52,6 +43,17 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
 
   context.subscriptions.push(createChangeWatcher);
 
+  const run_opts = { module: server, transport: TransportKind.ipc };
+  const debug_opts = {
+    ...run_opts,
+    options: { execArgv: ["--nolazy", `--inspect=${6011 + clients.size}`] },
+  };
+
+  const serverOpts = {
+    run: run_opts,
+    debug: debug_opts,
+  };
+
   const clientOpts: LanguageClientOptions = {
     documentSelector: [
       { language: "wgsl", pattern: `${folder.uri.fsPath}/**/*.wgsl` },
@@ -60,13 +62,7 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
     workspaceFolder: folder,
   };
 
-  const client = new LanguageClient(
-    extensionName,
-    extensionName,
-    clientOpts,
-    worker
-  );
-
+  const client = new LanguageClient(extensionName, serverOpts, clientOpts);
   clients.set(folder.uri.toString(), client);
   await client.start();
 }
