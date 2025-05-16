@@ -2,3 +2,5 @@ node_modules
 *.vsix
 .vscode/settings.json
 package_lock.json
+dist
+.vscode-test-web
