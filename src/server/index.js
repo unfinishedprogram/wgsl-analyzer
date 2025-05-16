@@ -8,7 +8,7 @@ import {
 const loadWasmModule = (e) => {
   if (e.data.type === "webpack_public_path") {
     let extension_uri = e.data.extension_uri;
-    __webpack_public_path__ += extension_uri.replace("file:///", "") + "/dist/";
+    __webpack_public_path__ = extension_uri + "/dist/";
 
     require("../../dist/pkg")
       .then(startServer)
@@ -21,7 +21,6 @@ const loadWasmModule = (e) => {
   }
 };
 
-console.log("Establishing LSP connections");
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
 

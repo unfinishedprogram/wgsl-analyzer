@@ -54,7 +54,7 @@ async function startClient(folder: WorkspaceFolder, context: ExtensionContext) {
 
   const clientOpts: LanguageClientOptions = {
     documentSelector: [
-      { language: "wgsl", pattern: `${folder.uri.fsPath}/**/*.wgsl` },
+      { language: "wgsl" },
     ],
     diagnosticCollectionName: extensionName,
     workspaceFolder: folder,

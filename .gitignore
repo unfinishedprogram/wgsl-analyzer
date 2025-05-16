@@ -3,3 +3,4 @@ node_modules
 .vscode/settings.json
 package_lock.json
 dist
+.vscode-test-web
