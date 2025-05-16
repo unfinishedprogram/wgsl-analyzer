@@ -2,7 +2,7 @@
   "name": "wgsl-lang",
   "displayName": "WGSL Language Support",
   "description": "",
-  "version": "0.7.1",
+  "version": "0.7.0",
   "publisher": "noah-labrecque",
   "repository": {
     "type": "github",
@@ -13,17 +13,15 @@
   },
   "icon": "icon.png",
   "scripts": {
-    "build-wasm": "npx wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --release",
-    "build-client": "npx esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --minify --external:vscode",
-    "build-server": "npx esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node --minify",
-    "build-wasm-dev": "npx wasm-pack build ./wgsl-language-server --target nodejs --out-dir ../dist --dev",
-    "build-client-dev": "npx esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --format=cjs --platform=node --external:vscode",
-    "build-server-dev": "npx esbuild ./src/server/index.ts --bundle --outfile=dist/server.js --format=cjs --platform=node",
-    "build-all": "npm run build-wasm; npm run build-server; npm run build-client",
-    "build-all-dev": "npm run build-wasm-dev; npm run build-server-dev; npm run build-client-dev",
+    "build-client": "npx esbuild ./src/extension.ts --keep-names --bundle --outfile=dist/extension.js --format=cjs --minify --external:vscode --external:wgsl_language_server",
+    "build-server": "npx webpack",
+    "build-client-dev": "npx esbuild ./src/extension.ts --keep-names --bundle --outfile=dist/extension.js --format=cjs --external:vscode --external:wgsl_language_server",
+    "build-server-dev": "npx webpack",
+    "build-all": "npm run build-server; npm run build-client",
+    "build-all-dev": "npm run build-server-dev; npm run build-client-dev",
     "publish": "npx vsce publish"
   },
-  "main": "./dist/extension.js",
+  "browser": "./dist/extension.js",
   "categories": [
     "Programming Languages",
     "Linters",
@@ -59,12 +57,16 @@
   },
   "devDependencies": {
     "@types/node": "^20.3.1",
-    "@vscode/vsce": "^3.2.2",
-    "esbuild": "^0.18.9",
     "@types/vscode": "^1.1.37",
-    "wasm-pack": "^0.13.1"
+    "@vscode/vsce": "^3.2.2",
+    "@wasm-tool/wasm-pack-plugin": "^1.7.0",
+    "esbuild": "^0.18.9",
+    "wasm-pack": "^0.13.1",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "esbuild-plugin-polyfill-node": "^0.3.0",
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver": "^8.1.0"
   }
