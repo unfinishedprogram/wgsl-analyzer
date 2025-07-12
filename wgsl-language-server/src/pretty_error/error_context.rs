@@ -77,8 +77,10 @@ impl<'a> ModuleContext<'a> {
     ) -> Diagnostic<()> {
         let func = &self.module.functions[handle];
         match error {
-            FunctionError::InvalidReturnType(return_expr) => if let Some(expr_handle) = return_expr
-            {
+            FunctionError::InvalidReturnType {
+                expression: expr_handle,
+                expected_ty,
+            } => if let Some(expr_handle) = expr_handle {
                 let return_span = func.expressions.get_span(*expr_handle);
                 diagnostic.with_label(label!(
                     &return_span,
@@ -95,9 +97,9 @@ impl<'a> ModuleContext<'a> {
                 &self.module.functions.get_span(handle),
                 "Expected function `{}` to return type `{}`",
                 func.name.clone().unwrap_or_default(),
-                func.result
+                expected_ty
                     .as_ref()
-                    .map(|it| it.ty.print_type(self))
+                    .map(|it| it.print_type(self))
                     .unwrap_or("void".to_string())
             )),
             FunctionError::InvalidArgumentType { index: _, name: _ } => {
@@ -132,16 +134,6 @@ impl<'a> ModuleContext<'a> {
             // } => todo!(),
             // FunctionError::NonConstructibleReturnType => todo!(),
             // FunctionError::InvalidArgumentPointerSpace { index, name, space } => todo!(),
-            FunctionError::InstructionsAfterReturn => {
-                let return_span = func
-                    .body
-                    .span_iter()
-                    .find(|(stmt, _)| matches!(stmt, Statement::Return { .. }))
-                    .map(|(_, span)| *span)
-                    .unwrap_or_else(|| self.module.functions.get_span(handle));
-
-                diagnostic.with_label(label!(&return_span, "{:?}", &error))
-            }
             // FunctionError::BreakOutsideOfLoopOrSwitch => todo!(),
             // FunctionError::ContinueOutsideOfLoop => todo!(),
             // FunctionError::InvalidReturnSpot => todo!(),
