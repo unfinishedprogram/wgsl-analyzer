@@ -19,6 +19,7 @@ impl AsType for Handle<Expression> {
             Expression::Literal(lit) => match lit {
                 naga::Literal::F64(_) => scalar(ScalarKind::Float, 8),
                 naga::Literal::F32(_) => scalar(ScalarKind::Float, 4),
+                naga::Literal::F16(_) => scalar(ScalarKind::Float, 2),
                 naga::Literal::U32(_) => scalar(ScalarKind::Uint, 4),
                 naga::Literal::I32(_) => scalar(ScalarKind::Sint, 4),
                 naga::Literal::Bool(_) => scalar(ScalarKind::Bool, 0),

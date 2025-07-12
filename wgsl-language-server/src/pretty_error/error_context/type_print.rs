@@ -91,8 +91,8 @@ impl TypePrintable for TypeInner {
                 "sampler"
             }
             .into(),
-            TypeInner::AccelerationStructure => "AccelerationStructure".into(),
-            TypeInner::RayQuery => "RayQuery".into(),
+            TypeInner::AccelerationStructure { vertex_return: _ } => "AccelerationStructure".into(),
+            TypeInner::RayQuery { vertex_return: _ } => "RayQuery".into(),
             TypeInner::BindingArray { base, size } => {
                 let base_type = base.print_type(context);
 

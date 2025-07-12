@@ -181,8 +181,8 @@ impl TrackedDocument {
             naga::TypeInner::Scalar(_) => {}
             naga::TypeInner::Image { .. } => {}
             naga::TypeInner::Sampler { .. } => {}
-            naga::TypeInner::AccelerationStructure => {}
-            naga::TypeInner::RayQuery => {}
+            naga::TypeInner::AccelerationStructure { .. } => {}
+            naga::TypeInner::RayQuery { .. } => {}
             naga::TypeInner::BindingArray { .. } => {}
             naga::TypeInner::Atomic(_) => {}
             naga::TypeInner::Pointer { .. } => {}

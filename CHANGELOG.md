@@ -141,3 +141,9 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Changed
 
 - Now compatible with VS-Code for web!
+
+## [0.7.3]
+
+### Changed
+
+- Updated to naga 26
