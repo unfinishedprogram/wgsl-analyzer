@@ -32,8 +32,7 @@ type CompilationResult =
     Result<(Module, Result<ModuleInfo, naga::WithSpan<ValidationError>>), ParseError>;
 
 impl TrackedDocument {
-    pub fn compile_module(&mut self, validator: &mut Validator) -> &CompilationResult {
-        validator.reset();
+    pub fn compile_module(&mut self, mut validator: Validator) -> &CompilationResult {
         let result = match naga::front::wgsl::parse_str(&self.content) {
             Err(parse_error) => Err(parse_error),
             Ok(module) => {
@@ -74,16 +73,18 @@ impl TrackedDocument {
 }
 
 pub struct DocumentTracker {
-    validator: Validator,
     documents: HashMap<Uri, TrackedDocument>,
 }
 
 impl DocumentTracker {
     pub fn new() -> Self {
         Self {
-            validator: naga::valid::Validator::new(ValidationFlags::all(), Capabilities::all()),
             documents: Default::default(),
         }
+    }
+
+    pub fn validator(&self) -> Validator {
+        Validator::new(ValidationFlags::all(), Capabilities::all())
     }
 
     pub fn insert(&mut self, doc: TextDocumentItem) {
@@ -95,12 +96,14 @@ impl DocumentTracker {
             last_valid_module: None,
         };
 
-        document.compile_module(&mut self.validator);
+        document.compile_module(self.validator());
 
         self.documents.insert(doc.uri, document);
     }
 
     pub fn update(&mut self, change: DidChangeTextDocumentParams) {
+        let validator = self.validator();
+
         if let Some(doc) = self.documents.get_mut(&change.text_document.uri) {
             for change in change.content_changes {
                 if let Some(range) = change.range {
@@ -110,7 +113,7 @@ impl DocumentTracker {
                     doc.content = change.text;
                 }
             }
-            doc.compile_module(&mut self.validator);
+            doc.compile_module(validator);
         }
     }
 
