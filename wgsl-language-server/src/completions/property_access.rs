@@ -14,7 +14,7 @@ pub enum PropertyAccess<'a> {
     Index,
 }
 
-fn parse_property_accesses(line: &str) -> Vec<PropertyAccess> {
+fn parse_property_accesses(line: &str) -> Vec<PropertyAccess<'_>> {
     let line = line.trim();
     let mut props = vec![];
 

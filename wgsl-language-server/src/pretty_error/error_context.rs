@@ -3,9 +3,11 @@ mod ident_query;
 pub mod index_impl;
 pub mod type_print;
 
+use std::error::Error;
+
 use crate::block_ext::BlockExt;
 use as_type::AsType;
-use codespan_reporting::diagnostic::Diagnostic;
+use codespan_reporting::diagnostic::{Diagnostic, Label};
 use naga::{
     Expression, Function, Handle, Module, Statement, WithSpan,
     valid::{CallError, ExpressionError, FunctionError, ValidationError},
@@ -43,6 +45,7 @@ impl<'a> ModuleContext<'a> {
                 name: _,
                 source,
             } => self.function_error_diagnostic(Diagnostic::error(), *handle, source),
+            ValidationError::EntryPoint { .. } => self.entry_point_error_diagnostic(error),
             other => {
                 Diagnostic::error().with_message("UNIMPLEMENTED: ".to_string() + &other.to_string())
             }
@@ -56,7 +59,10 @@ impl<'a> ModuleContext<'a> {
         }
     }
 
-    pub fn function_ctx_from_handle(&self, function_handle: Handle<Function>) -> FunctionContext {
+    pub fn function_ctx_from_handle(
+        &self,
+        function_handle: Handle<Function>,
+    ) -> FunctionContext<'_> {
         self.function_ctx(&self.module.functions[function_handle])
     }
 
@@ -350,6 +356,29 @@ impl<'a> ModuleContext<'a> {
             // ExpressionError::UnsupportedWidth(math_function, scalar_kind, _) => todo!(),
             _ => diagnostic.with_label(label!(&expr_span, "{}", error.to_string())),
         }
+    }
+
+    // TODO: Improve this. Raw handles are printed now
+    fn entry_point_error_diagnostic(&self, error: &WithSpan<ValidationError>) -> Diagnostic<()> {
+        Diagnostic::error()
+            .with_message(error.as_inner().to_string())
+            .with_labels(
+                error
+                    .spans()
+                    .map(|&(span, ref desc)| {
+                        Label::primary((), span.to_range().unwrap()).with_message(desc.to_owned())
+                    })
+                    .collect(),
+            )
+            .with_notes({
+                let mut notes = Vec::new();
+                let mut source: &dyn Error = &error.as_inner();
+                while let Some(next) = Error::source(source) {
+                    notes.push(next.to_string());
+                    source = next;
+                }
+                notes
+            })
     }
 
     fn code_in_fn(

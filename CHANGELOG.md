@@ -6,7 +6,7 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - Initial release
 
-## [0.2.0] 
+## [0.2.0]
 
 ### Added
 
@@ -62,13 +62,11 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 - Added keyword auto-complete
 - Refactor of autocompletion system
 
-
 ## [0.4.2]
 
 ### Fixed
 
 - Fixed incorrect error reporting locations on windows due to incorrect handling of CRLF line terminators see [issue #6](https://github.com/unfinishedprogram/wgsl-analyzer/issues/6)
-
 
 ## [0.4.3]
 
@@ -80,7 +78,6 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 
 - Updated to naga 23
 - Improved error messages for nested expression errors
-
 
 ## [0.5.0]
 
@@ -95,14 +92,11 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 - Adjustments to diagnostic messages
 - Autocompletion is now more context aware
 
-
-
 ## [0.5.1]
 
 ### Changed
 
 - Improved robustness and automation of releases
-
 
 ## [0.6.0]
 
@@ -114,7 +108,6 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Changed
 
 - Removed non-existent literals from language-configuration
-
 
 ## [0.6.1]
 
@@ -147,3 +140,13 @@ All notable changes to the "WGSL Language Server" extension will be documented i
 ### Changed
 
 - Updated to naga 26
+
+## [0.7.4]
+
+### Changed
+
+- Updated to naga 28
+
+### Fixed
+
+- Improved error messages for entry-point errors
