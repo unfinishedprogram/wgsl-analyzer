@@ -93,14 +93,14 @@ impl TrackedDocument {
                 .to_range()
                 .unwrap_or_default();
 
-            if range.start < *position {
-                if let Some(name) = &variable.name {
-                    res.push(detailed_completion_item(
-                        name.to_owned(),
-                        CompletionItemKind::VARIABLE,
-                        &self.content[span],
-                    ))
-                }
+            if range.start < *position
+                && let Some(name) = &variable.name
+            {
+                res.push(detailed_completion_item(
+                    name.to_owned(),
+                    CompletionItemKind::VARIABLE,
+                    &self.content[span],
+                ))
             }
         }
 

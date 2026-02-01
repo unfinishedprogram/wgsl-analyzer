@@ -56,7 +56,10 @@ impl<'a> ModuleContext<'a> {
         }
     }
 
-    pub fn function_ctx_from_handle(&self, function_handle: Handle<Function>) -> FunctionContext {
+    pub fn function_ctx_from_handle(
+        &self,
+        function_handle: Handle<Function>,
+    ) -> FunctionContext<'_> {
         self.function_ctx(&self.module.functions[function_handle])
     }
 

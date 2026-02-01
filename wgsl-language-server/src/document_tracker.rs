@@ -65,7 +65,7 @@ impl TrackedDocument {
         }
     }
 
-    pub fn module_context(&self) -> Option<ModuleContext> {
+    pub fn module_context(&self) -> Option<ModuleContext<'_>> {
         self.last_valid_module.as_ref().map(|module| ModuleContext {
             module,
             code: &self.content,
